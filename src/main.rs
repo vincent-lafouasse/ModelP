@@ -65,11 +65,26 @@ impl Synth {
             stream,
         }
     }
+
+    fn set_frequency(&mut self, f: f32) {
+        self.frequency_bits
+            .store(Into::<f32>::into(f).to_bits(), Ordering::Relaxed);
+    }
 }
 
 fn main() {
-    let synth = Synth::new();
+    let mut synth = Synth::new();
+
+    synth.set_frequency(256.0);
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    synth.set_frequency(440.0);
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    synth.set_frequency(256.0);
+    std::thread::sleep(std::time::Duration::from_secs(1));
+
+    /*
     loop {
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
+    */
 }
