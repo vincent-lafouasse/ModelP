@@ -41,17 +41,9 @@ impl Synth {
             .next()
             .expect("no supported config?!")
             .with_max_sample_rate();
+        let err_fn = |err| eprintln!("an error occurred on the output audio stream: {}", err);
         let stream = device
-            .build_output_stream(
-                &stream_config.config(),
-                move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
-                    callback(data, info);
-                },
-                move |err| {
-                    // react to errors here.
-                },
-                None,
-            )
+            .build_output_stream(&stream_config.config(), callback, err_fn, None)
             .expect("failed to open output stream");
         stream.play();
     }
