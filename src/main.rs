@@ -1,6 +1,8 @@
 #![allow(unused)]
 
 use std::f32::consts::PI;
+use std::sync::atomic::AtomicU32;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -17,15 +19,12 @@ fn build_sine_wavetable(resolution: usize) -> Arc<[f32]> {
 
 struct Synth {
     wavetable: Arc<[f32]>,
-    phase: f32,
+    frequency_bits: Arc<AtomicU32>,
     stream: Stream,
 }
 
 impl Synth {
     fn new() -> Self {
-        let wavetable = build_sine_wavetable(WAVETABLE_RESOLUTION);
-        let phase = 0.0;
-
         let host = cpal::default_host();
         let device = host
             .default_output_device()
@@ -38,10 +37,20 @@ impl Synth {
             .next()
             .expect("no supported config?!")
             .with_max_sample_rate();
+        let sample_rate = stream_config.sample_rate().0;
 
+        let wavetable = build_sine_wavetable(WAVETABLE_RESOLUTION);
+        let frequency_bits: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
+        frequency_bits.store(Into::<f32>::into(256.0f32).to_bits(), Ordering::Relaxed);
+
+        let mut phase: f32 = 0.0;
+        let frequency_bits__ = frequency_bits.clone();
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
+            let frequency: f32 = f32::from_bits(frequency_bits__.load(Ordering::Relaxed));
             for sample in data {
-                *sample = 0.0;
+                *sample = phase.sin();
+                phase = phase + 2.0 * PI * frequency / sample_rate as f32;
+                phase = phase.rem_euclid(2.0 * PI);
             }
         };
         let err_fn = |err| eprintln!("an error occurred on the output audio stream: {}", err);
@@ -52,7 +61,7 @@ impl Synth {
 
         Self {
             wavetable,
-            phase,
+            frequency_bits,
             stream,
         }
     }
@@ -60,4 +69,7 @@ impl Synth {
 
 fn main() {
     let synth = Synth::new();
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
 }
