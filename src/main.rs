@@ -17,6 +17,18 @@ fn build_sine_wavetable(resolution: usize) -> Arc<[f32]> {
         .collect()
 }
 
+fn lerp(x: f32, a: f32, b: f32) -> f32 {
+    x * b + (1.0 - x) * a
+}
+
+fn wrapped_add(lhs: usize, rhs: usize, max: usize) -> usize {
+    if (lhs + rhs > max) {
+        lhs + rhs - max
+    } else {
+        lhs + rhs
+    }
+}
+
 struct AudioThreadState {
     frequency_bits: Arc<AtomicU32>,
     phase: f32,
