@@ -17,6 +17,20 @@ fn build_sine_wavetable(resolution: usize) -> Arc<[f32]> {
         .collect()
 }
 
+struct AudioThreadState {
+    frequency_bits: Arc<AtomicU32>,
+    phase: f32,
+}
+
+impl AudioThreadState {
+    fn new(frequency_bits: Arc<AtomicU32>) -> Self {
+        Self {
+            frequency_bits,
+            phase: 0.0,
+        }
+    }
+}
+
 struct Synth {
     wavetable: Arc<[f32]>,
     frequency_bits: Arc<AtomicU32>,
@@ -43,14 +57,13 @@ impl Synth {
         let frequency_bits: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
         frequency_bits.store(Into::<f32>::into(256.0f32).to_bits(), Ordering::Relaxed);
 
-        let mut phase: f32 = 0.0;
-        let frequency_bits__ = frequency_bits.clone();
+        let mut state = AudioThreadState::new(frequency_bits.clone());
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
-            let frequency: f32 = f32::from_bits(frequency_bits__.load(Ordering::Relaxed));
+            let frequency: f32 = f32::from_bits(state.frequency_bits.load(Ordering::Relaxed));
             for sample in data {
-                *sample = phase.sin();
-                phase = phase + 2.0 * PI * frequency / sample_rate as f32;
-                phase = phase.rem_euclid(2.0 * PI);
+                *sample = state.phase.sin();
+                state.phase = state.phase + 2.0 * PI * frequency / sample_rate as f32;
+                state.phase = state.phase.rem_euclid(2.0 * PI);
             }
         };
         let err_fn = |err| eprintln!("an error occurred on the output audio stream: {}", err);
