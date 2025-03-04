@@ -47,11 +47,9 @@ pub fn main() -> Result<(), String> {
                 ..
             } = event
             {
-                match keycode {
-                    Keycode::A => synth.set_frequency(256.0),
-                    Keycode::G => synth.set_frequency(256.0 * 1.5),
-                    Keycode::Space => synth.toggle_playback(),
-                    _ => {}
+                if let Some(note) = keymap(keycode) {
+                    println!("received note {}", note.note);
+                    synth.set_frequency(note.frequency());
                 }
             }
             match event {
