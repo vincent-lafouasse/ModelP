@@ -48,7 +48,7 @@ pub fn main() -> Result<(), String> {
             } = event
             {
                 if let Some(note) = keymap(keycode) {
-                    println!("received note {}", note.note);
+                    println!("received note {}", note.frequency());
                     synth.set_frequency(note.frequency());
                 }
             }
