@@ -91,7 +91,12 @@ impl Synth {
             .store(Into::<f32>::into(f).to_bits(), Ordering::Relaxed);
     }
 
-    pub fn send_midi_event(&mut self, event: MidiEvent) {}
+    pub fn send_midi_event(&mut self, event: MidiEvent) {
+        match event.kind {
+            MidiEventKind::NoteOn => self.process_note_on(event.note),
+            MidiEventKind::NoteOff => self.process_note_off(event.note),
+        }
+    }
 
     fn process_note_on(&mut self, note: MidiNote) {
         self.playing.store(true, Ordering::Relaxed);
