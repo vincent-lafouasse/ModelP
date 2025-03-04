@@ -8,21 +8,6 @@ use cpal::{Data, Stream};
 
 const WAVETABLE_RESOLUTION: usize = 256;
 
-fn build_sine_wavetable(resolution: usize) -> Arc<[f32]> {
-    (0..resolution)
-        .map(|i| 2.0 * PI * (i as f32) / (resolution as f32))
-        .map(|phase| phase.sin())
-        .collect()
-}
-
-fn wrapped_add(lhs: usize, rhs: usize, max: usize) -> usize {
-    if (lhs + rhs > max) {
-        lhs + rhs - max
-    } else {
-        lhs + rhs
-    }
-}
-
 struct AudioThreadState {
     frequency_bits: Arc<AtomicU32>,
     phase: f32,
@@ -88,5 +73,20 @@ impl Synth {
     pub fn set_frequency(&mut self, f: f32) {
         self.frequency_bits
             .store(Into::<f32>::into(f).to_bits(), Ordering::Relaxed);
+    }
+}
+
+fn build_sine_wavetable(resolution: usize) -> Arc<[f32]> {
+    (0..resolution)
+        .map(|i| 2.0 * PI * (i as f32) / (resolution as f32))
+        .map(|phase| phase.sin())
+        .collect()
+}
+
+fn wrapped_add(lhs: usize, rhs: usize, max: usize) -> usize {
+    if (lhs + rhs > max) {
+        lhs + rhs - max
+    } else {
+        lhs + rhs
     }
 }
