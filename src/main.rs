@@ -1,5 +1,7 @@
 #![allow(unused)]
 
+mod math;
+
 use std::f32::consts::PI;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
@@ -15,10 +17,6 @@ fn build_sine_wavetable(resolution: usize) -> Arc<[f32]> {
         .map(|i| 2.0 * PI * (i as f32) / (resolution as f32))
         .map(|phase| phase.sin())
         .collect()
-}
-
-fn lerp(x: f32, a: f32, b: f32) -> f32 {
-    x * b + (1.0 - x) * a
 }
 
 fn wrapped_add(lhs: usize, rhs: usize, max: usize) -> usize {
