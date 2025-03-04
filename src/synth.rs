@@ -105,7 +105,7 @@ impl Synth {
         }
 
         let current_note = self.current_note.unwrap();
-        if (current_note != note) {
+        if current_note != note {
             return;
         }
 
