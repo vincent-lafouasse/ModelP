@@ -91,11 +91,9 @@ impl Synth {
         match self.playing.load(Ordering::Relaxed) {
             true => {
                 self.playing.store(false, Ordering::Relaxed);
-                println!("setting to false")
             }
             false => {
                 self.playing.store(true, Ordering::Relaxed);
-                println!("setting to true")
             }
         }
     }
