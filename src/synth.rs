@@ -9,6 +9,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::Stream;
 
 use crate::wavetable::Wavetable;
+use crate::midi::{MidiEvent, MidiEventKind, MidiNote};
 
 struct AudioThreadState {
     frequency_bits: Arc<AtomicU32>,
@@ -31,6 +32,7 @@ impl AudioThreadState {
 pub struct Synth {
     frequency_bits: Arc<AtomicU32>,
     playing: Arc<AtomicBool>,
+    current_note: Option<MidiNote>,
     stream: Stream,
 }
 
@@ -74,21 +76,21 @@ impl Synth {
             .build_output_stream(&stream_config.config(), callback, err_fn, None)
             .expect("failed to open output stream");
         stream.play().unwrap();
-
+&
         Self {
             frequency_bits,
             playing,
+            current_note: None,
             stream,
         }
     }
 
     pub fn set_frequency(&mut self, f: f32) {
+        dbg!(f);
         self.frequency_bits
             .store(Into::<f32>::into(f).to_bits(), Ordering::Relaxed);
     }
 
-    pub fn toggle_playback(&mut self) {
-        let playing = self.playing.load(Ordering::Relaxed);
-        self.playing.store(!playing, Ordering::Relaxed);
+    pub fn send_midi_event(&mut self, event: MidiEvent) {
     }
 }

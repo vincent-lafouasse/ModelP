@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct MidiNote {
     pub note: u8,
 }
