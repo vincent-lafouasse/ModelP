@@ -9,6 +9,7 @@ use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 
 mod math;
+mod midi;
 mod synth;
 mod wavetable;
 
