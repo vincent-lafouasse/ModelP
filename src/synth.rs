@@ -8,33 +8,7 @@ use std::sync::Arc;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Data, Stream};
 
-const WAVETABLE_RESOLUTION: usize = 256;
-
-#[derive(Clone, Debug)]
-struct Wavetable {
-    data: Arc<[f32]>,
-    size: usize,
-}
-
-impl Wavetable {
-    fn sine(size: usize) -> Self {
-        let data: Arc<[f32]> = (0..size)
-            .map(|i| TAU * (i as f32) / (size as f32))
-            .map(|phase| phase.sin())
-            .collect();
-
-        Self { data, size }
-    }
-
-    // 2π periodic
-    fn at(&self, phase: f32) -> f32 {
-        let float_index = self.size as f32 * phase.rem_euclid(TAU) / TAU;
-        let lower: usize = float_index.floor() as usize;
-        let higher: usize = wrapped_increment(lower, self.size - 1);
-
-        crate::math::lerp(float_index.fract(), self.data[lower], self.data[higher])
-    }
-}
+use crate::wavetable::Wavetable;
 
 struct AudioThreadState {
     frequency_bits: Arc<AtomicU32>,
@@ -82,7 +56,7 @@ impl Synth {
 
         // vvv moved into thread
         let mut state = AudioThreadState::new(frequency_bits.clone(), playing.clone());
-        let wavetable: Wavetable = Wavetable::sine(WAVETABLE_RESOLUTION);
+        let wavetable: Wavetable = Wavetable::sine();
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
             let frequency: f32 = f32::from_bits(state.frequency_bits.load(Ordering::Relaxed));
             let volume: f32 = match state.playing.load(Ordering::Relaxed) {
@@ -116,13 +90,5 @@ impl Synth {
     pub fn toggle_playback(&mut self) {
         let playing = self.playing.load(Ordering::Relaxed);
         self.playing.store(!playing, Ordering::Relaxed);
-    }
-}
-
-fn wrapped_increment(n: usize, max: usize) -> usize {
-    if n == max {
-        0
-    } else {
-        n + 1
     }
 }

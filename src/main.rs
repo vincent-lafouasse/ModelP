@@ -10,6 +10,7 @@ use sdl2::pixels::Color;
 
 mod math;
 mod synth;
+mod wavetable;
 
 use crate::synth::Synth;
 
