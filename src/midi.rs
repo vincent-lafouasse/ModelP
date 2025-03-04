@@ -63,8 +63,7 @@ pub struct MidiEvent {
 }
 
 impl MidiEvent {
-    pub fn note_on(note: u8) -> Self {
-        let note = MidiNote::new(note);
+    pub fn note_on(note: MidiNote) -> Self {
         let kind = MidiEventKind::NoteOn;
         let timestamp = Instant::now();
         Self {
@@ -74,8 +73,7 @@ impl MidiEvent {
         }
     }
 
-    pub fn note_off(note: u8) -> Self {
-        let note = MidiNote::new(note);
+    pub fn note_off(note: MidiNote) -> Self {
         let kind = MidiEventKind::NoteOff;
         let timestamp = Instant::now();
         Self {

@@ -102,6 +102,7 @@ impl Synth {
         self.playing.store(true, Ordering::Relaxed);
         self.current_note = Some(note);
         self.set_frequency(note.frequency());
+        println!("Playing {}", note.note);
     }
 
     fn process_note_off(&mut self, note: MidiNote) {
@@ -116,5 +117,6 @@ impl Synth {
 
         self.playing.store(false, Ordering::Relaxed);
         self.current_note = None;
+        println!("Killing {}", note.note);
     }
 }

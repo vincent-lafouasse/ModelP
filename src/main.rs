@@ -50,7 +50,15 @@ pub fn main() -> Result<(), String> {
             } = event
             {
                 if let Some(note) = keymap(keycode) {
-                    synth.set_frequency(note.frequency());
+                    synth.send_midi_event(MidiEvent::note_on(note));
+                }
+            } else if let Event::KeyUp {
+                keycode: Some(keycode),
+                ..
+            } = event
+            {
+                if let Some(note) = keymap(keycode) {
+                    synth.send_midi_event(MidiEvent::note_off(note));
                 }
             }
             match event {
