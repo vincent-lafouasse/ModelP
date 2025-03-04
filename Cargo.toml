@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 cpal = "0.15.3"
-termion = "4.0.4"
+sdl2 = "0.37.0"
