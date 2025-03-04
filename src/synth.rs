@@ -6,7 +6,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{Data, Stream};
+use cpal::Stream;
 
 use crate::wavetable::Wavetable;
 
