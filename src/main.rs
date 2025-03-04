@@ -1,6 +1,7 @@
 #![allow(unused)]
 
 mod math;
+mod synth;
 
 use std::f32::consts::PI;
 use std::sync::atomic::AtomicU32;
