@@ -12,7 +12,7 @@ impl MidiNote {
 
     // 12TET
     pub fn frequency(&self) -> f32 {
-        let offset_from_a4: u8 = self.offset - 60;
+        let offset_from_a4: u8 = self.offset - 69;
 
         440.0 * 2.0_f32.powf(offset_from_a4 as f32 / 12.0)
     }
