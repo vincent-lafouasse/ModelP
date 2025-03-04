@@ -1,4 +1,3 @@
-use sdl2::sys::wchar_t;
 use std::time::Instant;
 
 pub struct MidiNote {
@@ -12,7 +11,7 @@ impl MidiNote {
 
     // 12TET
     pub fn frequency(&self) -> f32 {
-        let offset_from_a4: i8 = 69 - self.note as i8;
+        let offset_from_a4: i8 = self.note as i8 - 69;
 
         440.0 * 2.0_f32.powf(offset_from_a4 as f32 / 12.0)
     }
