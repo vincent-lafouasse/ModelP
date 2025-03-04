@@ -47,6 +47,7 @@ pub fn main() -> Result<(), String> {
                 match keycode {
                     Keycode::A => synth.set_frequency(256.0),
                     Keycode::G => synth.set_frequency(256.0 * 1.5),
+                    Keycode::Space => synth.toggle_playback(),
                     _ => {}
                 }
             }

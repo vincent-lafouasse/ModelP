@@ -1,4 +1,5 @@
 use std::f32::consts::PI;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -10,13 +11,17 @@ const WAVETABLE_RESOLUTION: usize = 256;
 
 struct AudioThreadState {
     frequency_bits: Arc<AtomicU32>,
+    playing: Arc<AtomicBool>,
+    volume: f32,
     phase: f32,
 }
 
 impl AudioThreadState {
-    fn new(frequency_bits: Arc<AtomicU32>) -> Self {
+    fn new(frequency_bits: Arc<AtomicU32>, playing: Arc<AtomicBool>) -> Self {
         Self {
             frequency_bits,
+            playing,
+            volume: 0.0,
             phase: 0.0,
         }
     }
@@ -25,6 +30,7 @@ impl AudioThreadState {
 pub struct Synth {
     wavetable: Arc<[f32]>,
     frequency_bits: Arc<AtomicU32>,
+    playing: Arc<AtomicBool>,
     stream: Stream,
 }
 
@@ -47,12 +53,17 @@ impl Synth {
         let wavetable = build_sine_wavetable(WAVETABLE_RESOLUTION);
         let frequency_bits: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
         frequency_bits.store(Into::<f32>::into(256.0f32).to_bits(), Ordering::Relaxed);
+        let playing: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
 
-        let mut state = AudioThreadState::new(frequency_bits.clone());
+        let mut state = AudioThreadState::new(frequency_bits.clone(), playing.clone());
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
             let frequency: f32 = f32::from_bits(state.frequency_bits.load(Ordering::Relaxed));
+            let volume: f32 = match state.playing.load(Ordering::Relaxed) {
+                true => 1.0,
+                false => 0.0,
+            };
             for sample in data {
-                *sample = state.phase.sin();
+                *sample = volume * state.phase.sin();
                 state.phase += 2.0 * PI * frequency / sample_rate as f32;
                 state.phase = state.phase.rem_euclid(2.0 * PI);
             }
@@ -66,6 +77,7 @@ impl Synth {
         Self {
             wavetable,
             frequency_bits,
+            playing,
             stream,
         }
     }
@@ -73,6 +85,19 @@ impl Synth {
     pub fn set_frequency(&mut self, f: f32) {
         self.frequency_bits
             .store(Into::<f32>::into(f).to_bits(), Ordering::Relaxed);
+    }
+
+    pub fn toggle_playback(&mut self) {
+        match self.playing.load(Ordering::Relaxed) {
+            true => {
+                self.playing.store(false, Ordering::Relaxed);
+                println!("setting to false")
+            }
+            false => {
+                self.playing.store(true, Ordering::Relaxed);
+                println!("setting to true")
+            }
+        }
     }
 }
 
