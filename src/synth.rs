@@ -73,7 +73,7 @@ impl Synth {
         let stream = device
             .build_output_stream(&stream_config.config(), callback, err_fn, None)
             .expect("failed to open output stream");
-        stream.play();
+        stream.play().unwrap();
 
         Self {
             frequency_bits,
