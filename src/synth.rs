@@ -8,8 +8,8 @@ use std::sync::Arc;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::Stream;
 
-use crate::wavetable::Wavetable;
 use crate::midi::{MidiEvent, MidiEventKind, MidiNote};
+use crate::wavetable::Wavetable;
 
 struct AudioThreadState {
     frequency_bits: Arc<AtomicU32>,
@@ -75,8 +75,8 @@ impl Synth {
         let stream = device
             .build_output_stream(&stream_config.config(), callback, err_fn, None)
             .expect("failed to open output stream");
-        stream.play().unwrap();
-&
+        let _ = stream.play();
+
         Self {
             frequency_bits,
             playing,
@@ -92,5 +92,26 @@ impl Synth {
     }
 
     pub fn send_midi_event(&mut self, event: MidiEvent) {
+
+    }
+
+    fn process_note_on(&mut self, note: MidiNote) {
+        self.playing.store(true, Ordering::Relaxed);
+        self.current_note = Some(note);
+        self.set_frequency(note.frequency());
+    }
+
+    fn process_note_off(&mut self, note: MidiNote) {
+        if self.current_note.is_none() {
+            return;
+        }
+
+        let current_note = self.current_note.unwrap();
+        if (current_note != note) {
+            return
+        }
+
+        self.playing.store(false, Ordering::Relaxed);
+        self.current_note = None;
     }
 }
