@@ -91,9 +91,7 @@ impl Synth {
             .store(Into::<f32>::into(f).to_bits(), Ordering::Relaxed);
     }
 
-    pub fn send_midi_event(&mut self, event: MidiEvent) {
-
-    }
+    pub fn send_midi_event(&mut self, event: MidiEvent) {}
 
     fn process_note_on(&mut self, note: MidiNote) {
         self.playing.store(true, Ordering::Relaxed);
@@ -108,7 +106,7 @@ impl Synth {
 
         let current_note = self.current_note.unwrap();
         if (current_note != note) {
-            return
+            return;
         }
 
         self.playing.store(false, Ordering::Relaxed);
