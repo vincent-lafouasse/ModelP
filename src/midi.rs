@@ -2,55 +2,55 @@ use sdl2::sys::wchar_t;
 use std::time::Instant;
 
 pub struct MidiNote {
-    offset: u8,
+    note: u8,
 }
 
 impl MidiNote {
-    pub fn new(offset: u8) -> Self {
-        Self { offset }
+    pub fn new(note: u8) -> Self {
+        Self { note }
     }
 
     // 12TET
     pub fn frequency(&self) -> f32 {
-        let offset_from_a4: u8 = self.offset - 69;
+        let offset_from_a4: u8 = self.note - 69;
 
         440.0 * 2.0_f32.powf(offset_from_a4 as f32 / 12.0)
     }
 
     #[allow(dead_code)]
     pub fn c0() -> Self {
-        let offset = 12;
-        Self { offset }
+        let note = 12;
+        Self { note }
     }
 
     #[allow(dead_code)]
     pub fn c1() -> Self {
-        let offset = Self::c0().offset + 12;
-        Self { offset }
+        let note = Self::c0().note + 12;
+        Self { note }
     }
 
     #[allow(dead_code)]
     pub fn c2() -> Self {
-        let offset = Self::c0().offset + 2 * 12;
-        Self { offset }
+        let note = Self::c0().note + 2 * 12;
+        Self { note }
     }
 
     #[allow(dead_code)]
     pub fn c3() -> Self {
-        let offset = Self::c0().offset + 3 * 12;
-        Self { offset }
+        let note = Self::c0().note + 3 * 12;
+        Self { note }
     }
 
     #[allow(dead_code)]
     pub fn c4() -> Self {
-        let offset = Self::c0().offset + 4 * 12;
-        Self { offset }
+        let note = Self::c0().note + 4 * 12;
+        Self { note }
     }
 
     #[allow(dead_code)]
     pub fn c5() -> Self {
-        let offset = Self::c0().offset + 5 * 12;
-        Self { offset }
+        let offset = Self::c0().note + 5 * 12;
+        Self { note: offset }
     }
 }
 
