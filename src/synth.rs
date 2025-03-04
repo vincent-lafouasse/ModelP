@@ -88,14 +88,8 @@ impl Synth {
     }
 
     pub fn toggle_playback(&mut self) {
-        match self.playing.load(Ordering::Relaxed) {
-            true => {
-                self.playing.store(false, Ordering::Relaxed);
-            }
-            false => {
-                self.playing.store(true, Ordering::Relaxed);
-            }
-        }
+        let playing = self.playing.load(Ordering::Relaxed);
+        self.playing.store(!playing, Ordering::Relaxed);
     }
 }
 
