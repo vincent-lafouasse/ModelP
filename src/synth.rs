@@ -68,7 +68,7 @@ impl Synth {
             let frequency: f32 = f32::from_bits(state.frequency_bits.load(Ordering::Relaxed));
             for sample in data {
                 *sample = state.phase.sin();
-                state.phase = state.phase + 2.0 * PI * frequency / sample_rate as f32;
+                state.phase += 2.0 * PI * frequency / sample_rate as f32;
                 state.phase = state.phase.rem_euclid(2.0 * PI);
             }
         };
