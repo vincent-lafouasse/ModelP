@@ -1,3 +1,4 @@
+use crate::midi::MidiEvent;
 use cpal::OutputStreamTimestamp;
 use std::time::Duration;
 
@@ -10,6 +11,15 @@ type StreamEventKind = crate::midi::MidiEventKind;
 pub struct StreamEvent {
     kind: StreamEventKind,
     timestamp: OutputStreamTimestamp,
+}
+
+impl StreamEvent {
+    pub fn from_midi_event(midi_event: MidiEvent, timestamp: OutputStreamTimestamp) -> Self {
+        Self {
+            kind: midi_event.kind,
+            timestamp,
+        }
+    }
 }
 
 impl Envelope {
