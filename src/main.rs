@@ -35,37 +35,38 @@ pub fn main() -> Result<(), String> {
     'running: loop {
         let frame_start = Instant::now();
         for event in event_pump.poll_iter() {
-            if let Event::KeyDown {
-                keycode: Some(keycode),
-                ..
-            } = event
-            {
-                if let Some(note) = keymap(keycode) {
-                    if !pressed_keys.contains(&keycode) {
-                        synth.send_midi_event(MidiEvent::new(note, MidiEventKind::NoteOn));
-                        pressed_keys.insert(keycode);
-                    }
-                }
-            }
-            if let Event::KeyUp {
-                keycode: Some(keycode),
-                ..
-            } = event
-            {
-                if let Some(note) = keymap(keycode) {
-                    if pressed_keys.contains(&keycode) {
-                        synth.send_midi_event(MidiEvent::new(note, MidiEventKind::NoteOff));
-                        pressed_keys.remove(&keycode);
-                    }
-                }
-            }
-            if let Event::KeyUp { keycode, .. } = event {}
             match event {
                 Event::Quit { .. }
                 | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
+                Event::KeyUp {
+                    keycode: Some(keycode),
+                    ..
+                }
+                | Event::KeyDown {
+                    keycode: Some(keycode),
+                    ..
+                } => match event {
+                    Event::KeyDown { .. } => {
+                        if let Some(note) = keymap(keycode) {
+                            if !pressed_keys.contains(&keycode) {
+                                synth.send_midi_event(MidiEvent::new(note, MidiEventKind::NoteOn));
+                                pressed_keys.insert(keycode);
+                            }
+                        }
+                    }
+                    Event::KeyUp { .. } => {
+                        if let Some(note) = keymap(keycode) {
+                            if pressed_keys.contains(&keycode) {
+                                synth.send_midi_event(MidiEvent::new(note, MidiEventKind::NoteOff));
+                                pressed_keys.remove(&keycode);
+                            }
+                        }
+                    }
+                    _ => unreachable!(),
+                },
                 _ => {}
             }
         }
