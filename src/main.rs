@@ -2,6 +2,7 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
+use std::collections::HashSet;
 use std::time::{Duration, Instant};
 
 extern crate sdl2;
@@ -24,6 +25,7 @@ const FRAME_LEN: Duration = Duration::from_nanos((1_000_000_000f32 / TARGET_FPS)
 
 pub fn main() -> Result<(), String> {
     let mut synth = Synth::new();
+    let mut pressed_keys: HashSet<Keycode> = HashSet::new();
 
     let rendering_ctx = RenderingContext::new();
     let mut canvas = rendering_ctx.make_canvas();
@@ -33,29 +35,37 @@ pub fn main() -> Result<(), String> {
     'running: loop {
         let frame_start = Instant::now();
         for event in event_pump.poll_iter() {
+            if let Event::KeyDown {
+                keycode: Some(keycode),
+                ..
+            } = event
+            {
+                if let Some(note) = keymap(keycode) {
+                    if !pressed_keys.contains(&keycode) {
+                        synth.send_midi_event(MidiEvent::new(note, MidiEventKind::NoteOn));
+                        pressed_keys.insert(keycode);
+                    }
+                }
+            }
+            if let Event::KeyUp {
+                keycode: Some(keycode),
+                ..
+            } = event
+            {
+                if let Some(note) = keymap(keycode) {
+                    if pressed_keys.contains(&keycode) {
+                        synth.send_midi_event(MidiEvent::new(note, MidiEventKind::NoteOff));
+                        pressed_keys.remove(&keycode);
+                    }
+                }
+            }
+            if let Event::KeyUp { keycode, .. } = event {}
             match event {
                 Event::Quit { .. }
                 | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
-                Event::KeyDown {
-                    keycode: Some(keycode),
-                    ..
-                }
-                | Event::KeyUp {
-                    keycode: Some(keycode),
-                    ..
-                } => {
-                    let event_kind = match event {
-                        Event::KeyDown { .. } => MidiEventKind::NoteOn,
-                        Event::KeyUp { .. } => MidiEventKind::NoteOff,
-                        _ => unreachable!(),
-                    };
-                    if let Some(note) = keymap(keycode) {
-                        synth.send_midi_event(MidiEvent::new(note, event_kind));
-                    }
-                }
                 _ => {}
             }
         }
