@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 
 extern crate sdl2;
 
+use midi::MidiEventKind;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -44,29 +45,29 @@ pub fn main() -> Result<(), String> {
     'running: loop {
         let frame_start = Instant::now();
         for event in event_pump.poll_iter() {
-            if let Event::KeyDown {
-                keycode: Some(keycode),
-                ..
-            } = event
-            {
-                if let Some(note) = keymap(keycode) {
-                    synth.send_midi_event(MidiEvent::note_on(note));
-                }
-            } else if let Event::KeyUp {
-                keycode: Some(keycode),
-                ..
-            } = event
-            {
-                if let Some(note) = keymap(keycode) {
-                    synth.send_midi_event(MidiEvent::note_off(note));
-                }
-            }
             match event {
                 Event::Quit { .. }
                 | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
+                Event::KeyDown {
+                    keycode: Some(keycode),
+                    ..
+                }
+                | Event::KeyUp {
+                    keycode: Some(keycode),
+                    ..
+                } => {
+                    let event_kind = match event {
+                        Event::KeyDown { .. } => MidiEventKind::NoteOn,
+                        Event::KeyUp { .. } => MidiEventKind::NoteOff,
+                        _ => unreachable!(),
+                    };
+                    if let Some(note) = keymap(keycode) {
+                        synth.send_midi_event(MidiEvent::new(note, event_kind));
+                    }
+                }
                 _ => {}
             }
         }

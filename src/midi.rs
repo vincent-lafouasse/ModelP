@@ -63,6 +63,14 @@ pub struct MidiEvent {
 }
 
 impl MidiEvent {
+    pub fn new(note: MidiNote, kind: MidiEventKind) -> Self {
+        Self {
+            note,
+            kind,
+            timestamp: Instant::now(),
+        }
+    }
+
     pub fn note_on(note: MidiNote) -> Self {
         let kind = MidiEventKind::NoteOn;
         let timestamp = Instant::now();
