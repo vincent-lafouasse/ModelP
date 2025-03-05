@@ -38,7 +38,7 @@ impl RenderingContext {
         }
     }
 
-    fn get_canvas(&self) -> sdl2::render::WindowCanvas {
+    fn make_canvas(&self) -> sdl2::render::WindowCanvas {
         let window = self
             .video_subsystem
             .window("decapode", 800, 600)
@@ -59,7 +59,7 @@ pub fn main() -> Result<(), String> {
     let mut synth = Synth::new();
 
     let rendering_ctx = RenderingContext::new();
-    let mut canvas = rendering_ctx.get_canvas();
+    let mut canvas = rendering_ctx.make_canvas();
     canvas.set_draw_color(Color::RGB(161, 88, 255)); // purple background
 
     let mut event_pump = rendering_ctx.sdl_context.event_pump()?;
