@@ -15,7 +15,7 @@ mod midi;
 mod synth;
 mod wavetable;
 
-use crate::midi::{MidiEvent, MidiNote, MidiEventKind};
+use crate::midi::{MidiEvent, MidiEventKind, MidiNote};
 use crate::synth::Synth;
 
 const TARGET_FPS: f32 = 10.0;
