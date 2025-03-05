@@ -22,26 +22,47 @@ use crate::synth::Synth;
 const TARGET_FPS: f32 = 10.0;
 const FRAME_LEN: Duration = Duration::from_nanos((1_000_000_000f32 / TARGET_FPS) as u64);
 
+struct RenderingContext {
+    sdl_context: sdl2::Sdl,
+    video_subsystem: sdl2::VideoSubsystem,
+}
+
+impl RenderingContext {
+    fn new() -> Self {
+        let sdl_context = sdl2::init().unwrap();
+        let video_subsystem = sdl_context.video().unwrap();
+
+        Self {
+            sdl_context,
+            video_subsystem,
+        }
+    }
+
+    fn get_canvas(&self) -> sdl2::render::WindowCanvas {
+        let window = self
+            .video_subsystem
+            .window("decapode", 800, 600)
+            .position_centered()
+            .opengl()
+            .build()
+            .map_err(|e| e.to_string())
+            .unwrap();
+        window
+            .into_canvas()
+            .build()
+            .map_err(|e| e.to_string())
+            .unwrap()
+    }
+}
+
 pub fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
-    let video_subsystem = sdl_context.video()?;
-
-    let window = video_subsystem
-        .window("decapode", 800, 600)
-        .position_centered()
-        .opengl()
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
-
-    canvas.set_draw_color(Color::RGB(161, 88, 255));
-    canvas.clear();
-    canvas.present();
-    let mut event_pump = sdl_context.event_pump()?;
-
     let mut synth = Synth::new();
 
+    let rendering_ctx = RenderingContext::new();
+    let mut canvas = rendering_ctx.get_canvas();
+    canvas.set_draw_color(Color::RGB(161, 88, 255)); // purple background
+
+    let mut event_pump = rendering_ctx.sdl_context.event_pump()?;
     'running: loop {
         let frame_start = Instant::now();
         for event in event_pump.poll_iter() {
