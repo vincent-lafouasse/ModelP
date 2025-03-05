@@ -18,7 +18,7 @@ mod wavetable;
 use crate::midi::{MidiEvent, MidiEventKind, MidiNote};
 use crate::synth::Synth;
 
-const TARGET_FPS: f32 = 10.0;
+const TARGET_FPS: f32 = 200.0;
 const FRAME_LEN: Duration = Duration::from_nanos((1_000_000_000f32 / TARGET_FPS) as u64);
 
 pub fn main() -> Result<(), String> {
