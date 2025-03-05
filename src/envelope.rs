@@ -1,4 +1,3 @@
-use crate::midi;
 use cpal::OutputStreamTimestamp;
 use std::time::Duration;
 
