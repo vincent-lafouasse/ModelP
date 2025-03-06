@@ -1,6 +1,8 @@
 use std::f32::consts::TAU;
 use std::sync::Arc;
 
+use hound::{SampleFormat, WavReader, WavSpec};
+
 const WAVETABLE_RESOLUTION: usize = 256;
 
 pub const TRIANGLE_WAVETABLE_PATH: &'static str = "./assets/wavetables/mini_triangle_wavetable.wav";
@@ -13,10 +15,28 @@ pub struct Wavetable {
 
 impl Wavetable {
     pub fn from_disk(path: &str) -> Self {
-        let reader = hound::WavReader::open(path).unwrap();
+        let reader = WavReader::open(path).unwrap();
         let size: usize = reader.len() as usize;
-        let samples = reader.into_samples::<f32>().map(|x| x.unwrap());
-        let data: Arc<[f32]> = Arc::from_iter(samples);
+        let data: Arc<[f32]> = match reader.spec() {
+            WavSpec {
+                sample_format: SampleFormat::Int,
+                ..
+            } => {
+                let samples = reader
+                    .into_samples::<i32>()
+                    .map(|x| x.unwrap())
+                    .map(|x| if x == i32::MIN { i32::MIN + 1 } else { x })
+                    .map(|x| x as f32 / i32::MAX as f32);
+                Arc::from_iter(samples)
+            }
+            WavSpec {
+                sample_format: SampleFormat::Float,
+                ..
+            } => {
+                let samples = reader.into_samples::<f32>().map(|x| x.unwrap());
+                Arc::from_iter(samples)
+            }
+        };
 
         Self { data, size }
     }
