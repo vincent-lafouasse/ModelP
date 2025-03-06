@@ -51,7 +51,7 @@ impl Wavetable {
         let infinite_norm: f32 = data
             .iter()
             .map(|x: &f32| x.abs())
-            .fold(0.0, |max, x| f32::max(max, x));
+            .fold(0.0, f32::max);
 
         let data: Vec<f32> = if infinite_norm > 0.0 {
             data.iter()
