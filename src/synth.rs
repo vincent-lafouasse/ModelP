@@ -58,7 +58,7 @@ impl Synth {
 
         // vvv moved into thread
         let mut state = AudioThreadState::new(frequency_bits.clone(), playing.clone());
-        let wavetable: Wavetable = Wavetable::sine();
+        let wavetable: Wavetable = Wavetable::from_disk(crate::wavetable::TRIANGLE_WAVETABLE_PATH);
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
             let frequency: f32 = f32::from_bits(state.frequency_bits.load(Ordering::Relaxed));
             let volume: f32 = match state.playing.load(Ordering::Relaxed) {
