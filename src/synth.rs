@@ -9,20 +9,26 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::Stream;
 
 use crate::midi::{MidiEvent, MidiEventKind, MidiNote};
-use crate::wavetable::Wavetable;
+use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
 struct AudioThreadState {
     frequency_bits: Arc<AtomicU32>,
     playing: Arc<AtomicBool>,
+    wavetable: Arc<Wavetable>,
     volume: f32,
     phase: f32,
 }
 
 impl AudioThreadState {
-    fn new(frequency_bits: Arc<AtomicU32>, playing: Arc<AtomicBool>) -> Self {
+    fn new(
+        frequency_bits: Arc<AtomicU32>,
+        playing: Arc<AtomicBool>,
+        wavetable: Arc<Wavetable>,
+    ) -> Self {
         Self {
             frequency_bits,
             playing,
+            wavetable,
             volume: 0.0,
             phase: 0.0,
         }
@@ -57,8 +63,12 @@ impl Synth {
         let playing: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
 
         // vvv moved into thread
-        let mut state = AudioThreadState::new(frequency_bits.clone(), playing.clone());
-        let wavetable: Wavetable = Wavetable::sine();
+        let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
+        let mut state = AudioThreadState::new(
+            frequency_bits.clone(),
+            playing.clone(),
+            wavetable_bank.get(WavetableKind::TriangleSaw),
+        );
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
             let frequency: f32 = f32::from_bits(state.frequency_bits.load(Ordering::Relaxed));
             let volume: f32 = match state.playing.load(Ordering::Relaxed) {
@@ -66,7 +76,7 @@ impl Synth {
                 false => 0.0,
             };
             for sample in data {
-                *sample = volume * wavetable.at(state.phase);
+                *sample = volume * state.wavetable.at(state.phase);
                 state.phase += 2.0 * PI * frequency / sample_rate as f32;
                 state.phase = state.phase.rem_euclid(2.0 * PI);
             }

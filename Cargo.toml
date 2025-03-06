@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 cpal = "0.15.3"
+hound = "3.5.1"
 sdl2 = "0.37.0"
