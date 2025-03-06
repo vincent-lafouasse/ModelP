@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::f32::consts::TAU;
 use std::sync::Arc;
 
@@ -6,26 +7,8 @@ use hound::{SampleFormat, WavReader, WavSpec};
 const WAVETABLE_RESOLUTION: usize = 256;
 const FLAT_GAIN_REDUCTION: f32 = 0.7;
 
-pub enum WavetableKind {
-    Triangle,
-    TriangleSaw,
-    Saw,
-    Square,
-    PulseWide,
-    PulseNarrow,
-}
-
-impl WavetableKind {
-    pub fn path(&self) -> &'static str {
-        match self {
-            WavetableKind::Triangle => "./assets/wavetables/mini_triangle_wavetable.wav",
-            WavetableKind::TriangleSaw => "./assets/wavetables/mini_triangle_saw_wavetable.wav",
-            WavetableKind::Saw => "./assets/wavetables/mini_saw_wavetable.wav",
-            WavetableKind::Square => "./assets/wavetables/mini_square_wavetable.wav",
-            WavetableKind::PulseWide => "./assets/wavetables/mini_pwm_wide_wavetable.wav",
-            WavetableKind::PulseNarrow => "./assets/wavetables/mini_pwm_narrow_wavetable.wav",
-        }
-    }
+pub struct WavetableBank {
+    wavetables: HashMap<WavetableKind, Arc<Wavetable>>,
 }
 
 #[derive(Clone, Debug)]
@@ -87,6 +70,28 @@ impl Wavetable {
         let higher: usize = wrapped_increment(lower, self.size - 1);
 
         crate::math::lerp(float_index.fract(), self.data[lower], self.data[higher])
+    }
+}
+
+pub enum WavetableKind {
+    Triangle,
+    TriangleSaw,
+    Saw,
+    Square,
+    PulseWide,
+    PulseNarrow,
+}
+
+impl WavetableKind {
+    pub fn path(&self) -> &'static str {
+        match self {
+            WavetableKind::Triangle => "./assets/wavetables/mini_triangle_wavetable.wav",
+            WavetableKind::TriangleSaw => "./assets/wavetables/mini_triangle_saw_wavetable.wav",
+            WavetableKind::Saw => "./assets/wavetables/mini_saw_wavetable.wav",
+            WavetableKind::Square => "./assets/wavetables/mini_square_wavetable.wav",
+            WavetableKind::PulseWide => "./assets/wavetables/mini_pwm_wide_wavetable.wav",
+            WavetableKind::PulseNarrow => "./assets/wavetables/mini_pwm_narrow_wavetable.wav",
+        }
     }
 }
 
