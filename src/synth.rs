@@ -14,9 +14,9 @@ use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
 enum VoiceState {
     Idle,
-    Attacking,
-    Sustaining,
-    Releasing,
+    Attacking(MidiNote),
+    Sustaining(MidiNote),
+    Releasing(MidiNote),
 }
 
 struct AudioThreadState {
