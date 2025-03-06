@@ -3,11 +3,12 @@ use std::f32::consts::TAU;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
+use std::sync::{mpsc, Arc};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::Stream;
 
+use crate::envelope::StreamEvent;
 use crate::midi::{MidiEvent, MidiEventKind, MidiNote};
 use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
@@ -15,6 +16,7 @@ struct AudioThreadState {
     frequency_bits: Arc<AtomicU32>,
     playing: Arc<AtomicBool>,
     wavetable: Arc<Wavetable>,
+    message_rx: mpsc::Receiver<MidiEvent>,
     volume: f32,
     phase: f32,
 }
@@ -24,11 +26,13 @@ impl AudioThreadState {
         frequency_bits: Arc<AtomicU32>,
         playing: Arc<AtomicBool>,
         wavetable: Arc<Wavetable>,
+        message_rx: mpsc::Receiver<MidiEvent>,
     ) -> Self {
         Self {
             frequency_bits,
             playing,
             wavetable,
+            message_rx,
             volume: 0.0,
             phase: 0.0,
         }
@@ -39,6 +43,7 @@ pub struct Synth {
     frequency_bits: Arc<AtomicU32>,
     playing: Arc<AtomicBool>,
     current_note: Option<MidiNote>,
+    message_tx: mpsc::Sender<MidiEvent>,
     stream: Stream,
 }
 
@@ -61,6 +66,7 @@ impl Synth {
         let frequency_bits: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
         frequency_bits.store(Into::<f32>::into(256.0f32).to_bits(), Ordering::Relaxed);
         let playing: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+        let (message_tx, message_rx) = mpsc::channel::<MidiEvent>();
 
         // vvv moved into thread
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
@@ -68,6 +74,7 @@ impl Synth {
             frequency_bits.clone(),
             playing.clone(),
             wavetable_bank.get(WavetableKind::TriangleSaw),
+            message_rx,
         );
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
             let frequency: f32 = f32::from_bits(state.frequency_bits.load(Ordering::Relaxed));
@@ -91,6 +98,7 @@ impl Synth {
             frequency_bits,
             playing,
             current_note: None,
+            message_tx,
             stream,
         }
     }
