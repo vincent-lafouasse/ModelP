@@ -8,7 +8,19 @@ const WAVETABLE_RESOLUTION: usize = 256;
 const FLAT_GAIN_REDUCTION: f32 = 0.7;
 
 pub struct WavetableBank {
-    wavetables: HashMap<WavetableKind, Arc<Wavetable>>,
+    triangle: Arc<Wavetable>,
+    square: Arc<Wavetable>,
+    etc: Arc<Wavetable>,
+}
+
+impl WavetableBank {
+    pub fn get(&self, kind: WavetableKind) -> Arc<Wavetable> {
+        match kind {
+            WavetableKind::Triangle => self.triangle.clone(),
+            WavetableKind::Square => self.square.clone(),
+            _ /* etc */ => todo!(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
