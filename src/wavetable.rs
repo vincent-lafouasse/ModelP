@@ -10,6 +10,15 @@ pub struct Wavetable {
 }
 
 impl Wavetable {
+    pub fn from_disk(path: &str) -> Self {
+        let reader = hound::WavReader::open(path).unwrap();
+        let size: usize = reader.len() as usize;
+        let samples = reader.into_samples::<f32>().map(|x| x.unwrap());
+        let data: Arc<[f32]> = Arc::from_iter(samples);
+
+        Self { data, size }
+    }
+
     pub fn sine() -> Self {
         let size = WAVETABLE_RESOLUTION;
         let data: Arc<[f32]> = (0..size)
