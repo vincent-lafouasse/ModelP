@@ -3,6 +3,8 @@ use std::sync::Arc;
 
 const WAVETABLE_RESOLUTION: usize = 256;
 
+pub const TRIANGLE_WAVETABLE_PATH: &'static str = "./assets/wavetables/mini_triangle_wavetable.wav";
+
 #[derive(Clone, Debug)]
 pub struct Wavetable {
     data: Arc<[f32]>,
