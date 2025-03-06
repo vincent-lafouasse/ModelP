@@ -12,6 +12,13 @@ use crate::envelope::StreamEvent;
 use crate::midi::{MidiEvent, MidiEventKind, MidiNote};
 use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
+enum VoiceState {
+    Idle,
+    Attacking,
+    Sustaining,
+    Releasing,
+}
+
 struct AudioThreadState {
     frequency_bits: Arc<AtomicU32>,
     playing: Arc<AtomicBool>,
