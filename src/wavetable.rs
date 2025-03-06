@@ -4,6 +4,7 @@ use std::sync::Arc;
 use hound::{SampleFormat, WavReader, WavSpec};
 
 const WAVETABLE_RESOLUTION: usize = 256;
+const FLAT_GAIN_REDUCTION: f32 = 0.7;
 
 pub const TRIANGLE_WAVETABLE_PATH: &'static str = "./assets/wavetables/mini_triangle_wavetable.wav";
 
@@ -17,26 +18,34 @@ impl Wavetable {
     pub fn from_disk(path: &str) -> Self {
         let reader = WavReader::open(path).unwrap();
         let size: usize = reader.len() as usize;
-        let data: Arc<[f32]> = match reader.spec() {
+        let data: Vec<f32> = match reader.spec() {
             WavSpec {
                 sample_format: SampleFormat::Int,
                 ..
-            } => {
-                let samples = reader
-                    .into_samples::<i32>()
-                    .map(|x| x.unwrap())
-                    .map(|x| if x == i32::MIN { i32::MIN + 1 } else { x })
-                    .map(|x| x as f32 / i32::MAX as f32);
-                Arc::from_iter(samples)
-            }
+            } => reader
+                .into_samples::<i32>()
+                .map(|x| x.unwrap())
+                .map(|x| if x == i32::MIN { i32::MIN + 1 } else { x })
+                .map(|x| x as f32 / i32::MAX as f32)
+                .collect(),
             WavSpec {
                 sample_format: SampleFormat::Float,
                 ..
-            } => {
-                let samples = reader.into_samples::<f32>().map(|x| x.unwrap());
-                Arc::from_iter(samples)
-            }
+            } => reader.into_samples::<f32>().map(|x| x.unwrap()).collect(),
         };
+        let infinite_norm: f32 = data
+            .iter()
+            .map(|x: &f32| x.abs())
+            .fold(0.0, |max, x| f32::max(max, x));
+
+        let data: Vec<f32> = if infinite_norm > 0.0 {
+            data.iter()
+                .map(|x| FLAT_GAIN_REDUCTION * *x / infinite_norm)
+                .collect()
+        } else {
+            data
+        };
+        let data: Arc<[f32]> = Arc::from(data);
 
         Self { data, size }
     }
