@@ -9,16 +9,44 @@ const FLAT_GAIN_REDUCTION: f32 = 0.7;
 
 pub struct WavetableBank {
     triangle: Arc<Wavetable>,
+    triangle_saw: Arc<Wavetable>,
+    saw: Arc<Wavetable>,
     square: Arc<Wavetable>,
-    etc: Arc<Wavetable>,
+    pwm_wide: Arc<Wavetable>,
+    pwm_narrow: Arc<Wavetable>,
 }
 
 impl WavetableBank {
+    pub fn new() -> Self {
+        let triangle: Arc<Wavetable> =
+            Arc::new(Wavetable::from_disk(WavetableKind::Triangle.path()));
+        let triangle_saw: Arc<Wavetable> =
+            Arc::new(Wavetable::from_disk(WavetableKind::TriangleSaw.path()));
+        let saw: Arc<Wavetable> = Arc::new(Wavetable::from_disk(WavetableKind::Saw.path()));
+        let square: Arc<Wavetable> = Arc::new(Wavetable::from_disk(WavetableKind::Square.path()));
+        let pwm_wide: Arc<Wavetable> =
+            Arc::new(Wavetable::from_disk(WavetableKind::PulseWide.path()));
+        let pwm_narrow: Arc<Wavetable> =
+            Arc::new(Wavetable::from_disk(WavetableKind::PulseNarrow.path()));
+
+        Self {
+            triangle,
+            triangle_saw,
+            saw,
+            square,
+            pwm_wide,
+            pwm_narrow,
+        }
+    }
+
     pub fn get(&self, kind: WavetableKind) -> Arc<Wavetable> {
         match kind {
             WavetableKind::Triangle => self.triangle.clone(),
+            WavetableKind::TriangleSaw => self.triangle_saw.clone(),
+            WavetableKind::Saw => self.saw.clone(),
             WavetableKind::Square => self.square.clone(),
-            _ /* etc */ => todo!(),
+            WavetableKind::PulseWide => self.pwm_wide.clone(),
+            WavetableKind::PulseNarrow => self.pwm_narrow.clone(),
         }
     }
 }
@@ -48,10 +76,7 @@ impl Wavetable {
                 ..
             } => reader.into_samples::<f32>().map(|x| x.unwrap()).collect(),
         };
-        let infinite_norm: f32 = data
-            .iter()
-            .map(|x: &f32| x.abs())
-            .fold(0.0, f32::max);
+        let infinite_norm: f32 = data.iter().map(|x: &f32| x.abs()).fold(0.0, f32::max);
 
         let data: Vec<f32> = if infinite_norm > 0.0 {
             data.iter()
