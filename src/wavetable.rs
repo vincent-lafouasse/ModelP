@@ -6,7 +6,27 @@ use hound::{SampleFormat, WavReader, WavSpec};
 const WAVETABLE_RESOLUTION: usize = 256;
 const FLAT_GAIN_REDUCTION: f32 = 0.7;
 
-pub const TRIANGLE_WAVETABLE_PATH: &'static str = "./assets/wavetables/mini_triangle_wavetable.wav";
+pub enum WavetableKind {
+    Triangle,
+    TriangleSaw,
+    Saw,
+    Square,
+    PulseWide,
+    PulseNarrow,
+}
+
+impl WavetableKind {
+    pub fn path(&self) -> &'static str {
+        match self {
+            WavetableKind::Triangle => "./assets/wavetables/mini_triangle_wavetable.wav",
+            WavetableKind::TriangleSaw => "./assets/wavetables/mini_triangle_saw_wavetable.wav",
+            WavetableKind::Saw => "./assets/wavetables/mini_saw_wavetable.wav",
+            WavetableKind::Square => "./assets/wavetables/mini_square_wavetable.wav",
+            WavetableKind::PulseWide => "./assets/wavetables/mini_pwm_wide_wavetable.wav",
+            WavetableKind::PulseNarrow => "./assets/wavetables/mini_pwm_narrow_wavetable.wav",
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct Wavetable {
