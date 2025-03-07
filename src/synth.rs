@@ -123,12 +123,17 @@ impl Synth {
                 return;
             }
             let frequency: f32 = state.voice_state.get_note().unwrap().frequency();
+            state.volume = match state.voice_state.get_note() {
+                Some(_) => 1.0,
+                None => 0.0,
+            };
             for sample in data {
                 let new_sample = state.volume * state.wavetable.at(state.phase);
-                dbg!(new_sample);
                 *sample = new_sample;
                 state.phase += 2.0 * PI * frequency / sample_rate as f32;
                 state.phase = state.phase.rem_euclid(2.0 * PI);
+
+                /*
                 if let VoiceState::Attacking(note) = state.voice_state {
                     if state.volume >= 1.0 {
                         state.volume = 1.0;
@@ -138,7 +143,7 @@ impl Synth {
                         state.volume = f32::min(state.volume, 1.0);
                     }
                 }
-                if let VoiceState::Releasing(note) = state.voice_state {
+                else if let VoiceState::Releasing(note) = state.voice_state {
                     if state.volume <= 0.0 {
                         state.volume = 0.0;
                         state.voice_state = VoiceState::Idle;
@@ -147,6 +152,7 @@ impl Synth {
                         state.volume = f32::max(state.volume, 0.0);
                     }
                 }
+                */
             }
         };
 
