@@ -1,5 +1,4 @@
 use std::f32::consts::PI;
-use std::f32::consts::TAU;
 use std::sync::{mpsc, Arc};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -96,7 +95,7 @@ impl Synth {
             update_timer: 0,
         };
 
-        let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
+        let callback = move |data: &mut [f32], _info: &cpal::OutputCallbackInfo| {
             'message_loop: loop {
                 let event = state.message_rx.try_recv();
                 if event.is_err() {
@@ -138,7 +137,7 @@ impl Synth {
                                 * enveloppe.attack_increment(sample_rate);
                             state.volume = f32::min(state.volume, 1.0);
                         }
-                    } else if let VoiceState::Releasing(note) = state.voice_state {
+                    } else if let VoiceState::Releasing(_) = state.voice_state {
                         if state.volume <= 0.0 {
                             state.volume = 0.0;
                             state.voice_state = VoiceState::Idle;
