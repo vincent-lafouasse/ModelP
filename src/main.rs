@@ -5,11 +5,9 @@
 use std::collections::HashSet;
 use std::time::{Duration, Instant};
 
-extern crate sdl2;
+extern crate eframe;
 
-type SdlEvent = sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
+use egui;
 
 mod event;
 mod math;
@@ -23,6 +21,61 @@ use crate::synth::Synth;
 
 const TARGET_REFRESH_RATE: f32 = 200.0;
 const FRAME_LEN: Duration = Duration::from_nanos((1_000_000_000f32 / TARGET_REFRESH_RATE) as u64);
+
+struct App {
+    synth: Synth,
+    pressed_keys: HashSet<egui::Key>,
+    root_note: MidiNote,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        let synth = Synth::new();
+        let pressed_keys: HashSet<egui::Key> = HashSet::new();
+        let root_note = MidiNote::c(2);
+
+        Self {
+            synth,
+            pressed_keys,
+            root_note,
+        }
+    }
+}
+
+fn main() -> Result<(), eframe::Error> {
+    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+    let options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "decapode",
+        options,
+        Box::new(|_cc| Ok(Box::<App>::default())),
+    )
+}
+
+impl eframe::App for App {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            if ctx.input(|i| i.viewport().close_requested()) {
+                ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+
+            /*
+            let events = ui.input().events.clone();
+            for event in &events {
+                match event {
+                    egui::Event::Key{key, pressed, ..} => {
+                        println!("{:?} = {:?}", key, pressed);
+                    },
+                    egui::Event::Text(t) => { println!("Text = {:?}", t) }
+                    _ => {}
+                }
+            }
+            */
+        });
+    }
+}
+
+/*
 
 pub fn main() -> Result<(), String> {
     let mut synth = Synth::new();
@@ -148,3 +201,6 @@ impl RenderingContext {
             .unwrap()
     }
 }
+
+
+ */
