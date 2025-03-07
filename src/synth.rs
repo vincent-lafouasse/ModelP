@@ -85,7 +85,7 @@ impl Synth {
         // vvv moved into thread
         let enveloppe = Enveloppe::new(1500, 3000);
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
-        let tuner = crate::tuner::Tuner::default();
+        let mut tuner = crate::tuner::Tuner::default();
         let mut state = AudioThreadState {
             voice_state: VoiceState::Idle,
             wavetable: wavetable_bank.get(WavetableKind::Triangle),
@@ -112,6 +112,14 @@ impl Synth {
                         continue 'message_loop;
                     }
                     state.voice_state = VoiceState::Releasing(incoming_note);
+                } else if let Event::OctaveUp = event {
+                    dbg!(&tuner);
+                    tuner.octave_up();
+                    dbg!(&tuner);
+                } else if let Event::OctaveDown = event {
+                    dbg!(&tuner);
+                    tuner.octave_down();
+                    dbg!(&tuner);
                 }
             }
             if state.voice_state == VoiceState::Idle {
@@ -165,6 +173,7 @@ impl Synth {
     }
 
     pub fn send_midi_event(&mut self, event: Event) {
+        dbg!(&event);
         let _ = self.message_tx.send(event);
     }
 }
