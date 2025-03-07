@@ -81,28 +81,28 @@ pub fn main() -> Result<(), String> {
 }
 
 fn keymap(keycode: Keycode) -> Option<MidiNote> {
-    let c4 = MidiNote::c0().octave_up(4);
+    let root = MidiNote::c0().octave_up(3);
     match keycode {
         // second row is white keys
-        Keycode::A => Some(c4),
-        Keycode::S => Some(c4.offset_up(2)),
-        Keycode::D => Some(c4.offset_up(4)),
-        Keycode::F => Some(c4.offset_up(5)),
-        Keycode::G => Some(c4.offset_up(7)),
-        Keycode::H => Some(c4.offset_up(9)),
-        Keycode::J => Some(c4.offset_up(11)),
-        Keycode::K => Some(c4.offset_up(12)),
-        Keycode::L => Some(c4.offset_up(14)),
-        Keycode::SEMICOLON => Some(c4.offset_up(16)),
-        Keycode::QUOTE => Some(c4.offset_up(17)),
+        Keycode::A => Some(root),
+        Keycode::S => Some(root.offset_up(2)),
+        Keycode::D => Some(root.offset_up(4)),
+        Keycode::F => Some(root.offset_up(5)),
+        Keycode::G => Some(root.offset_up(7)),
+        Keycode::H => Some(root.offset_up(9)),
+        Keycode::J => Some(root.offset_up(11)),
+        Keycode::K => Some(root.offset_up(12)),
+        Keycode::L => Some(root.offset_up(14)),
+        Keycode::SEMICOLON => Some(root.offset_up(16)),
+        Keycode::QUOTE => Some(root.offset_up(17)),
         // first row is black keys
-        Keycode::W => Some(c4.offset_up(1)),
-        Keycode::E => Some(c4.offset_up(3)),
-        Keycode::T => Some(c4.offset_up(6)),
-        Keycode::Y => Some(c4.offset_up(8)),
-        Keycode::U => Some(c4.offset_up(10)),
-        Keycode::I => Some(c4.offset_up(13)),
-        Keycode::O => Some(c4.offset_up(15)),
+        Keycode::W => Some(root.offset_up(1)),
+        Keycode::E => Some(root.offset_up(3)),
+        Keycode::T => Some(root.offset_up(6)),
+        Keycode::Y => Some(root.offset_up(8)),
+        Keycode::U => Some(root.offset_up(10)),
+        Keycode::I => Some(root.offset_up(13)),
+        Keycode::O => Some(root.offset_up(15)),
         _ => None,
     }
 }
