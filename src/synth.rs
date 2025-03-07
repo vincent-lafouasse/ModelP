@@ -134,6 +134,8 @@ impl Synth {
                     Event::ChangeOscillator(osc) => state.wavetable_kind = osc,
                     Event::SetMaster(master) => state.master = master,
                     Event::SetAttackMs(ms) => envelope.attack_ms = ms,
+                    Event::SetDecayMs(ms) => envelope.decay_ms = ms,
+                    Event::SetSustain(sustain) => envelope.sustain = sustain,
                     Event::SetReleaseMs(ms) => envelope.release_ms = ms,
                 }
             }
