@@ -46,6 +46,7 @@ impl Envelope {
 enum VoiceState {
     Idle,
     Attacking(MidiNote),
+    Decaying(MidiNote),
     Sustaining(MidiNote),
     Releasing(MidiNote),
 }
@@ -55,6 +56,7 @@ impl VoiceState {
         match self {
             VoiceState::Idle => None,
             VoiceState::Attacking(note) => Some(*note),
+            VoiceState::Decaying(note) => Some(*note),
             VoiceState::Sustaining(note) => Some(*note),
             VoiceState::Releasing(note) => Some(*note),
         }
@@ -162,11 +164,20 @@ impl Synth {
                     if let VoiceState::Attacking(note) = state.voice_state {
                         if state.volume >= 1.0 {
                             state.volume = 1.0;
-                            state.voice_state = VoiceState::Sustaining(note);
+                            state.voice_state = VoiceState::Decaying(note);
                         } else {
                             state.volume +=
                                 state.update_period as f32 * envelope.attack_increment(sample_rate);
                             state.volume = f32::min(state.volume, 1.0);
+                        }
+                    } else if let VoiceState::Decaying(note) = state.voice_state {
+                        if state.volume <= envelope.sustain {
+                            state.volume = envelope.sustain;
+                            state.voice_state = VoiceState::Sustaining(note);
+                        } else {
+                            state.volume -=
+                                state.update_period as f32 * envelope.decay_increment(sample_rate);
+                            state.volume = f32::max(state.volume, envelope.sustain);
                         }
                     } else if let VoiceState::Releasing(_) = state.voice_state {
                         if state.volume <= 0.0 {
