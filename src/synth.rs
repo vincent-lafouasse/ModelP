@@ -86,7 +86,7 @@ impl Synth {
                     }
                     Ok(event) => match event.kind {
                         MidiEventKind::NoteOn => {
-                            state.voice_state = VoiceState::Sustaining(event.note);
+                            state.voice_state = VoiceState::Attacking(event.note);
                         }
                         MidiEventKind::NoteOff => {
                             state.voice_state = VoiceState::Idle;
