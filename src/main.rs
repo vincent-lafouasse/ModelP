@@ -61,7 +61,7 @@ impl eframe::App for App {
             }
 
             let events = ui.ctx().input(|i| i.events.clone());
-            for event in &events {
+            'event_loop: for event in &events {
                 if let egui::Event::Key {
                     key: Key::Escape,
                     pressed: false,
@@ -72,12 +72,57 @@ impl eframe::App for App {
                 }
                 match event {
                     egui::Event::Key { key, pressed, .. } => {
-                        println!("{:?} = {:?}", key, pressed);
+                        let note = keymap(key, self.root_note);
+                        if note.is_none() {
+                            continue 'event_loop;
+                        }
+                        let note = note.unwrap();
+                        match pressed {
+                            // NoteOn
+                            true => {
+                                if !self.pressed_keys.contains(key) {
+                                    self.synth.send_midi_event(Event::NoteOn(note));
+                                    self.pressed_keys.insert(*key);
+                                }
+                            }
+                            // NoteOff
+                            false => {
+                                if self.pressed_keys.contains(key) {
+                                    self.synth.send_midi_event(Event::NoteOff(note));
+                                    self.pressed_keys.remove(key);
+                                }
+                            }
+                        }
                     }
                     _ => {}
                 }
             }
         });
+    }
+}
+fn keymap(keycode: &Key, root: MidiNote) -> Option<MidiNote> {
+    match keycode {
+        // second row is white keys
+        Key::A => Some(root),
+        Key::S => Some(root.offset_up(2)),
+        Key::D => Some(root.offset_up(4)),
+        Key::F => Some(root.offset_up(5)),
+        Key::G => Some(root.offset_up(7)),
+        Key::H => Some(root.offset_up(9)),
+        Key::J => Some(root.offset_up(11)),
+        Key::K => Some(root.offset_up(12)),
+        Key::L => Some(root.offset_up(14)),
+        Key::Semicolon => Some(root.offset_up(16)),
+        Key::Quote => Some(root.offset_up(17)),
+        // first row is black keys
+        Key::W => Some(root.offset_up(1)),
+        Key::E => Some(root.offset_up(3)),
+        Key::T => Some(root.offset_up(6)),
+        Key::Y => Some(root.offset_up(8)),
+        Key::U => Some(root.offset_up(10)),
+        Key::I => Some(root.offset_up(13)),
+        Key::O => Some(root.offset_up(15)),
+        _ => None,
     }
 }
 
@@ -149,31 +194,6 @@ pub fn main() -> Result<(), String> {
     Ok(())
 }
 
-fn keymap(keycode: Keycode, root: MidiNote) -> Option<MidiNote> {
-    match keycode {
-        // second row is white keys
-        Keycode::A => Some(root),
-        Keycode::S => Some(root.offset_up(2)),
-        Keycode::D => Some(root.offset_up(4)),
-        Keycode::F => Some(root.offset_up(5)),
-        Keycode::G => Some(root.offset_up(7)),
-        Keycode::H => Some(root.offset_up(9)),
-        Keycode::J => Some(root.offset_up(11)),
-        Keycode::K => Some(root.offset_up(12)),
-        Keycode::L => Some(root.offset_up(14)),
-        Keycode::SEMICOLON => Some(root.offset_up(16)),
-        Keycode::QUOTE => Some(root.offset_up(17)),
-        // first row is black keys
-        Keycode::W => Some(root.offset_up(1)),
-        Keycode::E => Some(root.offset_up(3)),
-        Keycode::T => Some(root.offset_up(6)),
-        Keycode::Y => Some(root.offset_up(8)),
-        Keycode::U => Some(root.offset_up(10)),
-        Keycode::I => Some(root.offset_up(13)),
-        Keycode::O => Some(root.offset_up(15)),
-        _ => None,
-    }
-}
 
 struct RenderingContext {
     sdl_context: sdl2::Sdl,
