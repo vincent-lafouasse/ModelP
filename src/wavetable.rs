@@ -133,6 +133,20 @@ impl WavetableKind {
     }
 }
 
+impl std::fmt::Display for WavetableKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let repr: &'static str = match self {
+            WavetableKind::Triangle => "Triangle",
+            WavetableKind::TriangleSaw => "TriangleSaw",
+            WavetableKind::Saw => "Saw",
+            WavetableKind::Square => "Square",
+            WavetableKind::PulseWide => "PWM Wide",
+            WavetableKind::PulseNarrow => "PWM Narrow",
+        };
+        write!(f, "{}", repr)
+    }
+}
+
 fn wrapped_increment(n: usize, max: usize) -> usize {
     if n == max {
         0
