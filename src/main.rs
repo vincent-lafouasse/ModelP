@@ -89,31 +89,22 @@ impl eframe::App for App {
 
             let events = ui.ctx().input(|i| i.events.clone());
             'event_loop: for event in &events {
-                if let egui::Event::Key {
-                    key: Key::Escape,
-                    pressed: false,
-                    ..
-                } = event
-                {
-                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
-                }
-                if let egui::Event::Key {
-                    key: Key::Z,
-                    pressed: false,
-                    ..
-                } = event
-                {
-                    self.synth.send_midi_event(Event::OctaveDown);
-                } else if let egui::Event::Key {
-                    key: Key::X,
-                    pressed: false,
-                    ..
-                } = event
-                {
-                    self.synth.send_midi_event(Event::OctaveUp);
-                }
-
                 match event {
+                    egui::Event::Key {
+                        key: Key::Escape,
+                        pressed: false,
+                        ..
+                    } => ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close),
+                    egui::Event::Key {
+                        key: Key::Z,
+                        pressed: false,
+                        ..
+                    } => self.synth.send_midi_event(Event::OctaveDown),
+                    egui::Event::Key {
+                        key: Key::X,
+                        pressed: false,
+                        ..
+                    } => self.synth.send_midi_event(Event::OctaveUp),
                     egui::Event::Key { key, pressed, .. } => {
                         let note = keymap(key, self.root_note);
                         if note.is_none() {
