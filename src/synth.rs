@@ -115,7 +115,7 @@ impl Synth {
                     if current_note.is_some() && current_note.unwrap() != incoming_note {
                         continue 'message_loop;
                     }
-                    state.voice_state = VoiceState::Idle;
+                    state.voice_state = VoiceState::Releasing(incoming_note);
                     state.phase = 0.0;
                 }
             }
