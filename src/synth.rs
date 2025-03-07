@@ -83,7 +83,7 @@ impl Synth {
         let (message_tx, message_rx) = mpsc::channel::<Event>();
 
         // vvv moved into thread
-        let enveloppe = Envelope::new(1500, 3000);
+        let envelope = Envelope::new(1500, 3000);
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
         let mut tuner = crate::tuner::Tuner::default();
         let mut state = AudioThreadState {
@@ -138,8 +138,8 @@ impl Synth {
                             state.volume = 1.0;
                             state.voice_state = VoiceState::Sustaining(note);
                         } else {
-                            state.volume += state.update_period as f32
-                                * enveloppe.attack_increment(sample_rate);
+                            state.volume +=
+                                state.update_period as f32 * envelope.attack_increment(sample_rate);
                             state.volume = f32::min(state.volume, 1.0);
                         }
                     } else if let VoiceState::Releasing(_) = state.voice_state {
@@ -148,7 +148,7 @@ impl Synth {
                             state.voice_state = VoiceState::Idle;
                         } else {
                             state.volume -= state.update_period as f32
-                                * enveloppe.release_decrement(sample_rate);
+                                * envelope.release_decrement(sample_rate);
                             state.volume = f32::max(state.volume, 0.0);
                         }
                     }
