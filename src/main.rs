@@ -67,14 +67,14 @@ impl eframe::App for App {
                     .radio_value(&mut self.current_wavetable, kind, format!("{kind}"))
                     .clicked()
                 {
-                    self.synth.send_midi_event(Event::ChangeOscillator(kind));
+                    self.synth.send_event(Event::ChangeOscillator(kind));
                 }
                 let kind = WavetableKind::Square;
                 if ui
                     .radio_value(&mut self.current_wavetable, kind, format!("{kind}"))
                     .clicked()
                 {
-                    self.synth.send_midi_event(Event::ChangeOscillator(kind));
+                    self.synth.send_event(Event::ChangeOscillator(kind));
                 }
             });
             ui.end_row();
@@ -83,8 +83,7 @@ impl eframe::App for App {
                 .add(egui::Slider::new(&mut self.master_volume, 0.0..=1.0).text("Master"))
                 .dragged()
             {
-                self.synth
-                    .send_midi_event(Event::SetMaster(self.master_volume));
+                self.synth.send_event(Event::SetMaster(self.master_volume));
             }
 
             let events = ui.ctx().input(|i| i.events.clone());
@@ -99,12 +98,12 @@ impl eframe::App for App {
                         key: Key::Z,
                         pressed: false,
                         ..
-                    } => self.synth.send_midi_event(Event::OctaveDown),
+                    } => self.synth.send_event(Event::OctaveDown),
                     egui::Event::Key {
                         key: Key::X,
                         pressed: false,
                         ..
-                    } => self.synth.send_midi_event(Event::OctaveUp),
+                    } => self.synth.send_event(Event::OctaveUp),
                     egui::Event::Key { key, pressed, .. } => {
                         let note = keymap(key, self.root_note);
                         if note.is_none() {
@@ -115,14 +114,14 @@ impl eframe::App for App {
                             // NoteOn
                             true => {
                                 if !self.pressed_keys.contains(key) {
-                                    self.synth.send_midi_event(Event::NoteOn(note));
+                                    self.synth.send_event(Event::NoteOn(note));
                                     self.pressed_keys.insert(*key);
                                 }
                             }
                             // NoteOff
                             false => {
                                 if self.pressed_keys.contains(key) {
-                                    self.synth.send_midi_event(Event::NoteOff(note));
+                                    self.synth.send_event(Event::NoteOff(note));
                                     self.pressed_keys.remove(key);
                                 }
                             }

@@ -178,7 +178,7 @@ impl Synth {
         Self { message_tx, stream }
     }
 
-    pub fn send_midi_event(&mut self, event: Event) {
+    pub fn send_event(&mut self, event: Event) {
         let _ = self.message_tx.send(event);
     }
 }
