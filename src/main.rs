@@ -112,11 +112,7 @@ impl eframe::App for App {
                     .send_event(Event::SetDecayMs(self.envelope.decay_ms));
             }
             if ui
-                .add(
-                    egui::Slider::new(&mut self.envelope.sustain, 0.0..=1.0)
-                        .logarithmic(true)
-                        .text("Sustain"),
-                )
+                .add(egui::Slider::new(&mut self.envelope.sustain, 0.0..=1.0).text("Sustain"))
                 .dragged()
             {
                 self.synth
