@@ -7,17 +7,18 @@ use std::time::{Duration, Instant};
 
 extern crate sdl2;
 
-use sdl2::event::Event;
+type SdlEvent = sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 
-mod envelope;
+mod event;
 mod math;
 mod midi;
 mod synth;
 mod wavetable;
 
-use crate::midi::{MidiEvent, MidiEventKind, MidiNote};
+use crate::event::{Event, EventKind};
+use crate::midi::MidiNote;
 use crate::synth::Synth;
 
 const TARGET_FPS: f32 = 200.0;
@@ -36,31 +37,31 @@ pub fn main() -> Result<(), String> {
         let frame_start = Instant::now();
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
+                SdlEvent::Quit { .. }
+                | SdlEvent::KeyDown {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
-                Event::KeyUp {
+                SdlEvent::KeyUp {
                     keycode: Some(keycode),
                     ..
                 }
-                | Event::KeyDown {
+                | SdlEvent::KeyDown {
                     keycode: Some(keycode),
                     ..
                 } => match event {
-                    Event::KeyDown { .. } => {
+                    SdlEvent::KeyDown { .. } => {
                         if let Some(note) = keymap(keycode) {
                             if !pressed_keys.contains(&keycode) {
-                                synth.send_midi_event(MidiEvent::new(note, MidiEventKind::NoteOn));
+                                synth.send_midi_event(Event::note_on(note));
                                 pressed_keys.insert(keycode);
                             }
                         }
                     }
-                    Event::KeyUp { .. } => {
+                    SdlEvent::KeyUp { .. } => {
                         if let Some(note) = keymap(keycode) {
                             if pressed_keys.contains(&keycode) {
-                                synth.send_midi_event(MidiEvent::new(note, MidiEventKind::NoteOff));
+                                synth.send_midi_event(Event::note_off(note));
                                 pressed_keys.remove(&keycode);
                             }
                         }

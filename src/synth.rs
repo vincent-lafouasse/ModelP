@@ -8,8 +8,8 @@ use std::sync::{mpsc, Arc};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::Stream;
 
-use crate::envelope::StreamEvent;
-use crate::midi::{MidiEvent, MidiEventKind, MidiNote};
+use crate::event::{Event, EventKind};
+use crate::midi::MidiNote;
 use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
 #[derive(PartialEq)]
@@ -34,13 +34,13 @@ impl VoiceState {
 struct AudioThreadState {
     voice_state: VoiceState,
     wavetable: Arc<Wavetable>,
-    message_rx: mpsc::Receiver<MidiEvent>,
+    message_rx: mpsc::Receiver<Event>,
     volume: f32,
     phase: f32,
 }
 
 impl AudioThreadState {
-    fn new(wavetable: Arc<Wavetable>, message_rx: mpsc::Receiver<MidiEvent>) -> Self {
+    fn new(wavetable: Arc<Wavetable>, message_rx: mpsc::Receiver<Event>) -> Self {
         Self {
             voice_state: VoiceState::Idle,
             wavetable,
@@ -52,7 +52,7 @@ impl AudioThreadState {
 }
 
 pub struct Synth {
-    message_tx: mpsc::Sender<MidiEvent>,
+    message_tx: mpsc::Sender<Event>,
     stream: Stream,
 }
 
@@ -72,7 +72,7 @@ impl Synth {
             .with_max_sample_rate();
         let sample_rate = stream_config.sample_rate().0;
 
-        let (message_tx, message_rx) = mpsc::channel::<MidiEvent>();
+        let (message_tx, message_rx) = mpsc::channel::<Event>();
 
         // vvv moved into thread
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
@@ -86,10 +86,10 @@ impl Synth {
                         break 'message_loop;
                     }
                     Ok(event) => match event.kind {
-                        MidiEventKind::NoteOn => {
+                        EventKind::NoteOn => {
                             state.voice_state = VoiceState::Attacking(event.note);
                         }
-                        MidiEventKind::NoteOff => {
+                        EventKind::NoteOff => {
                             state.voice_state = VoiceState::Idle;
                             state.phase = 0.0;
                         }
@@ -125,7 +125,7 @@ impl Synth {
         Self { message_tx, stream }
     }
 
-    pub fn send_midi_event(&mut self, event: MidiEvent) {
+    pub fn send_midi_event(&mut self, event: Event) {
         let _ = self.message_tx.send(event);
     }
 }

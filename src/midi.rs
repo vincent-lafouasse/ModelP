@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct MidiNote {
     pub note: u8,
@@ -48,46 +46,5 @@ impl MidiNote {
     #[allow(dead_code)]
     pub fn c(octave: u8) -> Self {
         Self::c0().octave_up(octave)
-    }
-}
-
-pub enum MidiEventKind {
-    NoteOn,
-    NoteOff,
-}
-
-pub struct MidiEvent {
-    pub note: MidiNote,
-    pub kind: MidiEventKind,
-    pub timestamp: Instant,
-}
-
-impl MidiEvent {
-    pub fn new(note: MidiNote, kind: MidiEventKind) -> Self {
-        Self {
-            note,
-            kind,
-            timestamp: Instant::now(),
-        }
-    }
-
-    pub fn note_on(note: MidiNote) -> Self {
-        let kind = MidiEventKind::NoteOn;
-        let timestamp = Instant::now();
-        Self {
-            note,
-            kind,
-            timestamp,
-        }
-    }
-
-    pub fn note_off(note: MidiNote) -> Self {
-        let kind = MidiEventKind::NoteOff;
-        let timestamp = Instant::now();
-        Self {
-            note,
-            kind,
-            timestamp,
-        }
     }
 }
