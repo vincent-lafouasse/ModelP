@@ -70,6 +70,22 @@ impl eframe::App for App {
                 {
                     ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                 }
+                if let egui::Event::Key {
+                    key: Key::Z,
+                    pressed: false,
+                    ..
+                } = event
+                {
+                    self.root_note = self.root_note.octave_down(1);
+                } else if let egui::Event::Key {
+                    key: Key::X,
+                    pressed: false,
+                    ..
+                } = event
+                {
+                    self.root_note = self.root_note.octave_up(1);
+                }
+
                 match event {
                     egui::Event::Key { key, pressed, .. } => {
                         let note = keymap(key, self.root_note);
