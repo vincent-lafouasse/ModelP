@@ -21,8 +21,8 @@ use crate::event::Event;
 use crate::midi::MidiNote;
 use crate::synth::Synth;
 
-const TARGET_FPS: f32 = 200.0;
-const FRAME_LEN: Duration = Duration::from_nanos((1_000_000_000f32 / TARGET_FPS) as u64);
+const TARGET_REFRESH_RATE: f32 = 200.0;
+const FRAME_LEN: Duration = Duration::from_nanos((1_000_000_000f32 / TARGET_REFRESH_RATE) as u64);
 
 pub fn main() -> Result<(), String> {
     let mut synth = Synth::new();
