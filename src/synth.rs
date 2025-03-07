@@ -78,6 +78,7 @@ impl Synth {
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
         let mut state =
             AudioThreadState::new(wavetable_bank.get(WavetableKind::TriangleSaw), message_rx);
+
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
             'message_loop: loop {
                 match state.message_rx.try_recv() {
@@ -99,21 +100,22 @@ impl Synth {
                 for sample in data {
                     *sample = cpal::Sample::EQUILIBRIUM;
                 }
-            } else {
-                let frequency: f32 = state.voice_state.get_note().unwrap().frequency();
-                let volume: f32 = match state.voice_state {
-                    VoiceState::Attacking(..)
-                    | VoiceState::Sustaining(..)
-                    | VoiceState::Releasing(..) => 1.0,
-                    VoiceState::Idle => unreachable!(),
-                };
-                for sample in data {
-                    *sample = volume * state.wavetable.at(state.phase);
-                    state.phase += 2.0 * PI * frequency / sample_rate as f32;
-                    state.phase = state.phase.rem_euclid(2.0 * PI);
-                }
+                return;
+            }
+            let frequency: f32 = state.voice_state.get_note().unwrap().frequency();
+            let volume: f32 = match state.voice_state {
+                VoiceState::Attacking(..)
+                | VoiceState::Sustaining(..)
+                | VoiceState::Releasing(..) => 1.0,
+                VoiceState::Idle => unreachable!(),
+            };
+            for sample in data {
+                *sample = volume * state.wavetable.at(state.phase);
+                state.phase += 2.0 * PI * frequency / sample_rate as f32;
+                state.phase = state.phase.rem_euclid(2.0 * PI);
             }
         };
+
         let err_fn = |err| eprintln!("an error occurred on the output audio stream: {}", err);
         let stream = device
             .build_output_stream(&stream_config.config(), callback, err_fn, None)
