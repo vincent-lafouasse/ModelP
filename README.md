@@ -1,3 +1,3 @@
-# decapode
+# Model P
 
-a chitinous decaphonic synth using only the `cpal` audio crate
+a Minimoog Model D clone because why not
