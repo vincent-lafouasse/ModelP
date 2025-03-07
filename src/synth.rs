@@ -55,6 +55,8 @@ struct AudioThreadState {
     message_rx: mpsc::Receiver<Event>,
     volume: f32,
     phase: f32,
+    frame_len: usize,
+    frame_counter: usize,
 }
 
 pub struct Synth {
@@ -82,8 +84,8 @@ impl Synth {
 
         // vvv moved into thread
         let enveloppe = Enveloppe::new(
-            Duration::from_millis(300),
-            Duration::from_millis(500),
+            Duration::from_millis(1500),
+            Duration::from_millis(3000),
             sample_rate as f32,
         );
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
@@ -93,6 +95,8 @@ impl Synth {
             message_rx,
             volume: 0.0,
             phase: 0.0,
+            frame_len: 5,
+            frame_counter: 0,
         };
 
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
@@ -123,36 +127,34 @@ impl Synth {
                 return;
             }
             let frequency: f32 = state.voice_state.get_note().unwrap().frequency();
-            state.volume = match state.voice_state.get_note() {
-                Some(_) => 1.0,
-                None => 0.0,
-            };
             for sample in data {
                 let new_sample = state.volume * state.wavetable.at(state.phase);
                 *sample = new_sample;
                 state.phase += 2.0 * PI * frequency / sample_rate as f32;
                 state.phase = state.phase.rem_euclid(2.0 * PI);
 
-                /*
-                if let VoiceState::Attacking(note) = state.voice_state {
-                    if state.volume >= 1.0 {
-                        state.volume = 1.0;
-                        state.voice_state = VoiceState::Sustaining(note);
-                    } else {
-                        state.volume += enveloppe.attack_increment;
-                        state.volume = f32::min(state.volume, 1.0);
+                if state.frame_counter == state.frame_len {
+                    if let VoiceState::Attacking(note) = state.voice_state {
+                        if state.volume >= 1.0 {
+                            state.volume = 1.0;
+                            state.voice_state = VoiceState::Sustaining(note);
+                        } else {
+                            state.volume += state.frame_len as f32 * enveloppe.attack_increment;
+                            state.volume = f32::min(state.volume, 1.0);
+                        }
+                    } else if let VoiceState::Releasing(note) = state.voice_state {
+                        if state.volume <= 0.0 {
+                            state.volume = 0.0;
+                            state.voice_state = VoiceState::Idle;
+                        } else {
+                            state.volume -= state.frame_len as f32 * enveloppe.release_decrement;
+                            state.volume = f32::max(state.volume, 0.0);
+                        }
                     }
+                    state.frame_counter = 0;
+                } else {
+                    state.frame_counter += 1;
                 }
-                else if let VoiceState::Releasing(note) = state.voice_state {
-                    if state.volume <= 0.0 {
-                        state.volume = 0.0;
-                        state.voice_state = VoiceState::Idle;
-                    } else {
-                        state.volume -= enveloppe.release_decrement;
-                        state.volume = f32::max(state.volume, 0.0);
-                    }
-                }
-                */
             }
         };
 
