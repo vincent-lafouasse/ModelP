@@ -102,6 +102,28 @@ impl eframe::App for App {
             }
             if ui
                 .add(
+                    egui::Slider::new(&mut self.envelope.decay_ms, 5..=10000)
+                        .logarithmic(true)
+                        .text("Decay (ms)"),
+                )
+                .dragged()
+            {
+                self.synth
+                    .send_event(Event::SetDecayMs(self.envelope.decay_ms));
+            }
+            if ui
+                .add(
+                    egui::Slider::new(&mut self.envelope.sustain, 0.0..=1.0)
+                        .logarithmic(true)
+                        .text("Sustain"),
+                )
+                .dragged()
+            {
+                self.synth
+                    .send_event(Event::SetSustain(self.envelope.sustain));
+            }
+            if ui
+                .add(
                     egui::Slider::new(&mut self.envelope.release_ms, 5..=10000)
                         .logarithmic(true)
                         .text("Release (ms)"),
