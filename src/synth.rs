@@ -25,6 +25,10 @@ impl Envelope {
         }
     }
 
+    pub fn default() -> Self {
+        Envelope::new(300, 100, 0.7, 200)
+    }
+
     fn attack_increment(&self, sample_rate: f32) -> f32 {
         1000.0 / (sample_rate * self.attack_ms as f32)
     }
