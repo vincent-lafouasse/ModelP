@@ -11,6 +11,7 @@ mod math;
 mod midi;
 mod synth;
 mod wavetable;
+mod tuner;
 
 use crate::event::Event;
 use crate::midi::MidiNote;
