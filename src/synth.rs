@@ -1,8 +1,5 @@
 use std::f32::consts::PI;
 use std::f32::consts::TAU;
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicU32;
-use std::sync::atomic::Ordering;
 use std::sync::{mpsc, Arc};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
