@@ -55,6 +55,7 @@ struct AudioThreadState {
     wavetable_kind: WavetableKind,
     message_rx: mpsc::Receiver<Event>,
     volume: f32,
+    master: f32,
     phase: f32,
     update_period: usize,
     update_timer: usize,
@@ -92,6 +93,7 @@ impl Synth {
             wavetable_kind: WavetableKind::Triangle,
             message_rx,
             volume: 0.0,
+            master: 0.7,
             phase: 0.0,
             update_period: 5,
             update_timer: 0,
@@ -118,6 +120,7 @@ impl Synth {
                     Event::OctaveUp => tuner.octave_up(),
                     Event::OctaveDown => tuner.octave_down(),
                     Event::ChangeOscillator(osc) => state.wavetable_kind = osc,
+                    Event::SetMaster(master) => state.master = master,
                 }
             }
             if state.voice_state == VoiceState::Idle {
@@ -129,7 +132,8 @@ impl Synth {
             }
             let frequency: f32 = tuner.get(state.voice_state.get_note().unwrap());
             for sample in data {
-                let new_sample = state.volume
+                let new_sample = state.master
+                    * state.volume
                     * state
                         .wavetable_bank
                         .get(state.wavetable_kind)

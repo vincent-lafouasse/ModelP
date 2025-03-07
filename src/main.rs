@@ -23,6 +23,7 @@ struct App {
     pressed_keys: HashSet<egui::Key>,
     root_note: MidiNote,
     current_wavetable: WavetableKind,
+    master_volume: f32,
 }
 
 impl Default for App {
@@ -37,6 +38,7 @@ impl Default for App {
             pressed_keys,
             root_note,
             current_wavetable,
+            master_volume: 0.7,
         }
     }
 }
@@ -76,6 +78,14 @@ impl eframe::App for App {
                 }
             });
             ui.end_row();
+
+            if ui
+                .add(egui::Slider::new(&mut self.master_volume, 0.0..=1.0).text("Master"))
+                .dragged()
+            {
+                self.synth
+                    .send_midi_event(Event::SetMaster(self.master_volume));
+            }
 
             let events = ui.ctx().input(|i| i.events.clone());
             'event_loop: for event in &events {

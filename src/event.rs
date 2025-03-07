@@ -8,6 +8,7 @@ pub enum Event {
     OctaveUp,
     OctaveDown,
     ChangeOscillator(WavetableKind),
+    SetMaster(f32),
 }
 
 impl Event {}
