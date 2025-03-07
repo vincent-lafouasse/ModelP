@@ -85,7 +85,7 @@ impl Synth {
         let (message_tx, message_rx) = mpsc::channel::<Event>();
 
         // vvv moved into thread
-        let envelope = Envelope::new(1500, 3000);
+        let mut envelope = Envelope::new(1500, 3000);
         let mut tuner = crate::tuner::Tuner::default();
         let mut state = AudioThreadState {
             voice_state: VoiceState::Idle,
@@ -121,6 +121,8 @@ impl Synth {
                     Event::OctaveDown => tuner.octave_down(),
                     Event::ChangeOscillator(osc) => state.wavetable_kind = osc,
                     Event::SetMaster(master) => state.master = master,
+                    Event::SetAttackMs(ms) => envelope.attack_ms = ms,
+                    Event::SetReleaseMs(ms) => envelope.release_ms = ms,
                 }
             }
             if state.voice_state == VoiceState::Idle {

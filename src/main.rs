@@ -24,6 +24,8 @@ struct App {
     root_note: MidiNote,
     current_wavetable: WavetableKind,
     master_volume: f32,
+    attack_ms: u16,
+    release_ms: u16,
 }
 
 impl Default for App {
@@ -39,6 +41,8 @@ impl Default for App {
             root_note,
             current_wavetable,
             master_volume: 0.7,
+            attack_ms: 300,
+            release_ms: 200,
         }
     }
 }
@@ -84,6 +88,27 @@ impl eframe::App for App {
                 .dragged()
             {
                 self.synth.send_event(Event::SetMaster(self.master_volume));
+            }
+
+            if ui
+                .add(
+                    egui::Slider::new(&mut self.attack_ms, 5..=10000)
+                        .logarithmic(true)
+                        .text("Attack (ms)"),
+                )
+                .dragged()
+            {
+                self.synth.send_event(Event::SetAttackMs(self.attack_ms));
+            }
+            if ui
+                .add(
+                    egui::Slider::new(&mut self.release_ms, 5..=10000)
+                        .logarithmic(true)
+                        .text("Release (ms)"),
+                )
+                .dragged()
+            {
+                self.synth.send_event(Event::SetReleaseMs(self.release_ms));
             }
 
             let events = ui.ctx().input(|i| i.events.clone());
