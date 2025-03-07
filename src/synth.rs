@@ -8,7 +8,7 @@ use std::sync::{mpsc, Arc};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::Stream;
 
-use crate::event::{Event, EventKind};
+use crate::event::Event;
 use crate::midi::MidiNote;
 use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
@@ -87,12 +87,12 @@ impl Synth {
                 }
 
                 let event = event.unwrap();
-                if event.kind == EventKind::NoteOn {
-                    state.voice_state = VoiceState::Attacking(event.note);
+                if let Event::NoteOn(incoming_note) = event {
+                    state.voice_state = VoiceState::Attacking(incoming_note);
                 }
-                if event.kind == EventKind::NoteOff {
+                if let Event::NoteOff(incoming_note) = event {
                     let current_note = state.voice_state.get_note();
-                    if current_note.is_some() && current_note.unwrap() != event.note {
+                    if current_note.is_some() && current_note.unwrap() != incoming_note {
                         continue 'message_loop;
                     }
                     state.voice_state = VoiceState::Idle;

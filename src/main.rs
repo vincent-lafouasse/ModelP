@@ -17,7 +17,7 @@ mod midi;
 mod synth;
 mod wavetable;
 
-use crate::event::{Event, EventKind};
+use crate::event::Event;
 use crate::midi::MidiNote;
 use crate::synth::Synth;
 
@@ -53,7 +53,7 @@ pub fn main() -> Result<(), String> {
                     SdlEvent::KeyDown { .. } => {
                         if let Some(note) = keymap(keycode) {
                             if !pressed_keys.contains(&keycode) {
-                                synth.send_midi_event(Event::note_on(note));
+                                synth.send_midi_event(Event::NoteOn(note));
                                 pressed_keys.insert(keycode);
                             }
                         }
@@ -61,7 +61,7 @@ pub fn main() -> Result<(), String> {
                     SdlEvent::KeyUp { .. } => {
                         if let Some(note) = keymap(keycode) {
                             if pressed_keys.contains(&keycode) {
-                                synth.send_midi_event(Event::note_off(note));
+                                synth.send_midi_event(Event::NoteOff(note));
                                 pressed_keys.remove(&keycode);
                             }
                         }
