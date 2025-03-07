@@ -1,7 +1,6 @@
 use std::f32::consts::PI;
 use std::f32::consts::TAU;
 use std::sync::{mpsc, Arc};
-use std::time::Duration;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::Stream;
@@ -11,22 +10,24 @@ use crate::midi::MidiNote;
 use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
 struct Enveloppe {
-    attack: Duration,
-    release: Duration,
-    attack_increment: f32,
-    release_decrement: f32,
+    attack_ms: u16,
+    release_ms: u16,
 }
 
 impl Enveloppe {
-    fn new(attack: Duration, release: Duration, sample_rate: f32) -> Self {
-        let attack_increment: f32 = 1000.0 / (sample_rate * attack.as_millis() as f32);
-        let release_decrement: f32 = 1000.0 / (sample_rate * release.as_millis() as f32);
+    fn new(attack_ms: u16, release_ms: u16) -> Self {
         Self {
-            attack,
-            release,
-            attack_increment,
-            release_decrement,
+            attack_ms,
+            release_ms,
         }
+    }
+
+    fn attack_increment(&self, sample_rate: f32) -> f32 {
+        1000.0 / (sample_rate * self.attack_ms as f32)
+    }
+
+    fn release_decrement(&self, sample_rate: f32) -> f32 {
+        1000.0 / (sample_rate * self.release_ms as f32)
     }
 }
 
@@ -78,16 +79,12 @@ impl Synth {
             .next()
             .expect("no supported config?!")
             .with_max_sample_rate();
-        let sample_rate = stream_config.sample_rate().0;
+        let sample_rate: f32 = stream_config.sample_rate().0 as f32;
 
         let (message_tx, message_rx) = mpsc::channel::<Event>();
 
         // vvv moved into thread
-        let enveloppe = Enveloppe::new(
-            Duration::from_millis(1500),
-            Duration::from_millis(3000),
-            sample_rate as f32,
-        );
+        let enveloppe = Enveloppe::new(1500, 3000);
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
         let mut state = AudioThreadState {
             voice_state: VoiceState::Idle,
@@ -128,7 +125,7 @@ impl Synth {
             for sample in data {
                 let new_sample = state.volume * state.wavetable.at(state.phase);
                 *sample = new_sample;
-                state.phase += 2.0 * PI * frequency / sample_rate as f32;
+                state.phase += 2.0 * PI * frequency / sample_rate;
                 state.phase = state.phase.rem_euclid(2.0 * PI);
 
                 if state.frame_counter == state.frame_len - 1 {
@@ -137,7 +134,8 @@ impl Synth {
                             state.volume = 1.0;
                             state.voice_state = VoiceState::Sustaining(note);
                         } else {
-                            state.volume += state.frame_len as f32 * enveloppe.attack_increment;
+                            state.volume +=
+                                state.frame_len as f32 * enveloppe.attack_increment(sample_rate);
                             state.volume = f32::min(state.volume, 1.0);
                         }
                     } else if let VoiceState::Releasing(note) = state.voice_state {
@@ -145,7 +143,8 @@ impl Synth {
                             state.volume = 0.0;
                             state.voice_state = VoiceState::Idle;
                         } else {
-                            state.volume -= state.frame_len as f32 * enveloppe.release_decrement;
+                            state.volume -=
+                                state.frame_len as f32 * enveloppe.release_decrement(sample_rate);
                             state.volume = f32::max(state.volume, 0.0);
                         }
                     }
