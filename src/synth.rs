@@ -103,19 +103,19 @@ impl Synth {
                     break 'message_loop;
                 }
 
-                let event = event.unwrap();
-                if let Event::NoteOn(incoming_note) = event {
-                    state.voice_state = VoiceState::Attacking(incoming_note);
-                } else if let Event::NoteOff(incoming_note) = event {
-                    let current_note = state.voice_state.get_note();
-                    if current_note.is_some() && current_note.unwrap() != incoming_note {
-                        continue 'message_loop;
+                match event.unwrap() {
+                    Event::NoteOn(incoming_note) => {
+                        state.voice_state = VoiceState::Attacking(incoming_note);
                     }
-                    state.voice_state = VoiceState::Releasing(incoming_note);
-                } else if let Event::OctaveUp = event {
-                    tuner.octave_up();
-                } else if let Event::OctaveDown = event {
-                    tuner.octave_down();
+                    Event::NoteOff(incoming_note) => {
+                        let current_note = state.voice_state.get_note();
+                        if current_note.is_some() && current_note.unwrap() != incoming_note {
+                            continue 'message_loop;
+                        }
+                        state.voice_state = VoiceState::Releasing(incoming_note);
+                    }
+                    Event::OctaveUp => tuner.octave_up(),
+                    Event::OctaveDown => tuner.octave_down(),
                 }
             }
             if state.voice_state == VoiceState::Idle {
