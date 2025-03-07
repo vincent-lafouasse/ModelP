@@ -8,12 +8,12 @@ use crate::event::Event;
 use crate::midi::MidiNote;
 use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
-struct Enveloppe {
+struct Envelope {
     attack_ms: u16,
     release_ms: u16,
 }
 
-impl Enveloppe {
+impl Envelope {
     fn new(attack_ms: u16, release_ms: u16) -> Self {
         Self {
             attack_ms,
@@ -83,8 +83,9 @@ impl Synth {
         let (message_tx, message_rx) = mpsc::channel::<Event>();
 
         // vvv moved into thread
-        let enveloppe = Enveloppe::new(1500, 3000);
+        let envelope = Envelope::new(1500, 3000);
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
+        let mut tuner = crate::tuner::Tuner::default();
         let mut state = AudioThreadState {
             voice_state: VoiceState::Idle,
             wavetable: wavetable_bank.get(WavetableKind::Triangle),
@@ -102,15 +103,19 @@ impl Synth {
                     break 'message_loop;
                 }
 
-                let event = event.unwrap();
-                if let Event::NoteOn(incoming_note) = event {
-                    state.voice_state = VoiceState::Attacking(incoming_note);
-                } else if let Event::NoteOff(incoming_note) = event {
-                    let current_note = state.voice_state.get_note();
-                    if current_note.is_some() && current_note.unwrap() != incoming_note {
-                        continue 'message_loop;
+                match event.unwrap() {
+                    Event::NoteOn(incoming_note) => {
+                        state.voice_state = VoiceState::Attacking(incoming_note);
                     }
-                    state.voice_state = VoiceState::Releasing(incoming_note);
+                    Event::NoteOff(incoming_note) => {
+                        let current_note = state.voice_state.get_note();
+                        if current_note.is_some() && current_note.unwrap() != incoming_note {
+                            continue 'message_loop;
+                        }
+                        state.voice_state = VoiceState::Releasing(incoming_note);
+                    }
+                    Event::OctaveUp => tuner.octave_up(),
+                    Event::OctaveDown => tuner.octave_down(),
                 }
             }
             if state.voice_state == VoiceState::Idle {
@@ -120,7 +125,7 @@ impl Synth {
                 state.volume = 0.0;
                 return;
             }
-            let frequency: f32 = state.voice_state.get_note().unwrap().frequency();
+            let frequency: f32 = tuner.get(state.voice_state.get_note().unwrap());
             for sample in data {
                 let new_sample = state.volume * state.wavetable.at(state.phase);
                 *sample = new_sample;
@@ -133,8 +138,8 @@ impl Synth {
                             state.volume = 1.0;
                             state.voice_state = VoiceState::Sustaining(note);
                         } else {
-                            state.volume += state.update_period as f32
-                                * enveloppe.attack_increment(sample_rate);
+                            state.volume +=
+                                state.update_period as f32 * envelope.attack_increment(sample_rate);
                             state.volume = f32::min(state.volume, 1.0);
                         }
                     } else if let VoiceState::Releasing(_) = state.voice_state {
@@ -143,7 +148,7 @@ impl Synth {
                             state.voice_state = VoiceState::Idle;
                         } else {
                             state.volume -= state.update_period as f32
-                                * enveloppe.release_decrement(sample_rate);
+                                * envelope.release_decrement(sample_rate);
                             state.volume = f32::max(state.volume, 0.0);
                         }
                     }

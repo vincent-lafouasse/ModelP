@@ -8,13 +8,6 @@ impl MidiNote {
         Self { note }
     }
 
-    // 12TET
-    pub fn frequency(&self) -> f32 {
-        let offset_from_a4: i16 = self.note as i16 - 69;
-
-        440.0 * 2.0_f32.powf(offset_from_a4 as f32 / 12.0)
-    }
-
     #[allow(dead_code)]
     pub fn offset_up(&self, n: u8) -> Self {
         let note: u8 = self.note.saturating_add(n);
