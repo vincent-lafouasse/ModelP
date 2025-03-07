@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 extern crate eframe;
 
 use egui;
+use egui::Key;
 
 mod event;
 mod math;
@@ -59,18 +60,23 @@ impl eframe::App for App {
                 ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
             }
 
-            /*
-            let events = ui.input().events.clone();
+            let events = ui.ctx().input(|i| i.events.clone());
             for event in &events {
+                if let egui::Event::Key {
+                    key: Key::Escape,
+                    pressed: false,
+                    ..
+                } = event
+                {
+                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                }
                 match event {
-                    egui::Event::Key{key, pressed, ..} => {
+                    egui::Event::Key { key, pressed, .. } => {
                         println!("{:?} = {:?}", key, pressed);
-                    },
-                    egui::Event::Text(t) => { println!("Text = {:?}", t) }
+                    }
                     _ => {}
                 }
             }
-            */
         });
     }
 }
