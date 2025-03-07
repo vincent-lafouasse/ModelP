@@ -4,6 +4,8 @@ use crate::midi::MidiNote;
 pub enum Event {
     NoteOn(MidiNote),
     NoteOff(MidiNote),
+    OctaveUp,
+    OctaveDown,
 }
 
 impl Event {}

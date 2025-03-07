@@ -70,14 +70,14 @@ impl eframe::App for App {
                     ..
                 } = event
                 {
-                    self.root_note = self.root_note.octave_down(1);
+                    self.synth.send_midi_event(Event::OctaveDown);
                 } else if let egui::Event::Key {
                     key: Key::X,
                     pressed: false,
                     ..
                 } = event
                 {
-                    self.root_note = self.root_note.octave_up(1);
+                    self.synth.send_midi_event(Event::OctaveUp);
                 }
 
                 match event {
