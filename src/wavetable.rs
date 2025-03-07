@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use std::f32::consts::TAU;
 use std::sync::Arc;
 
 use hound::{SampleFormat, WavReader, WavSpec};
 
+#[allow(dead_code)]
 const WAVETABLE_RESOLUTION: usize = 256;
 const FLAT_GAIN_REDUCTION: f32 = 0.7;
 
@@ -90,7 +90,8 @@ impl Wavetable {
         Self { data, size }
     }
 
-    pub fn sine() -> Self {
+    #[allow(dead_code)]
+    pub fn pure_sine() -> Self {
         let size = WAVETABLE_RESOLUTION;
         let data: Arc<[f32]> = (0..size)
             .map(|i| TAU * (i as f32) / (size as f32))

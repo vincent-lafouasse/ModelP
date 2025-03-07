@@ -1,44 +1,66 @@
 use std::f32::consts::PI;
-use std::f32::consts::TAU;
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicU32;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
+use std::sync::{mpsc, Arc};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::Stream;
 
-use crate::midi::{MidiEvent, MidiEventKind, MidiNote};
+use crate::event::Event;
+use crate::midi::MidiNote;
 use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
-struct AudioThreadState {
-    frequency_bits: Arc<AtomicU32>,
-    playing: Arc<AtomicBool>,
-    wavetable: Arc<Wavetable>,
-    volume: f32,
-    phase: f32,
+struct Enveloppe {
+    attack_ms: u16,
+    release_ms: u16,
 }
 
-impl AudioThreadState {
-    fn new(
-        frequency_bits: Arc<AtomicU32>,
-        playing: Arc<AtomicBool>,
-        wavetable: Arc<Wavetable>,
-    ) -> Self {
+impl Enveloppe {
+    fn new(attack_ms: u16, release_ms: u16) -> Self {
         Self {
-            frequency_bits,
-            playing,
-            wavetable,
-            volume: 0.0,
-            phase: 0.0,
+            attack_ms,
+            release_ms,
+        }
+    }
+
+    fn attack_increment(&self, sample_rate: f32) -> f32 {
+        1000.0 / (sample_rate * self.attack_ms as f32)
+    }
+
+    fn release_decrement(&self, sample_rate: f32) -> f32 {
+        1000.0 / (sample_rate * self.release_ms as f32)
+    }
+}
+
+#[derive(PartialEq)]
+enum VoiceState {
+    Idle,
+    Attacking(MidiNote),
+    Sustaining(MidiNote),
+    Releasing(MidiNote),
+}
+
+impl VoiceState {
+    fn get_note(&self) -> Option<MidiNote> {
+        match self {
+            VoiceState::Idle => None,
+            VoiceState::Attacking(note) => Some(*note),
+            VoiceState::Sustaining(note) => Some(*note),
+            VoiceState::Releasing(note) => Some(*note),
         }
     }
 }
 
+struct AudioThreadState {
+    voice_state: VoiceState,
+    wavetable: Arc<Wavetable>,
+    message_rx: mpsc::Receiver<Event>,
+    volume: f32,
+    phase: f32,
+    update_period: usize,
+    update_timer: usize,
+}
+
 pub struct Synth {
-    frequency_bits: Arc<AtomicU32>,
-    playing: Arc<AtomicBool>,
-    current_note: Option<MidiNote>,
+    message_tx: mpsc::Sender<Event>,
     stream: Stream,
 }
 
@@ -56,77 +78,92 @@ impl Synth {
             .next()
             .expect("no supported config?!")
             .with_max_sample_rate();
-        let sample_rate = stream_config.sample_rate().0;
+        let sample_rate: f32 = stream_config.sample_rate().0 as f32;
 
-        let frequency_bits: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
-        frequency_bits.store(Into::<f32>::into(256.0f32).to_bits(), Ordering::Relaxed);
-        let playing: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+        let (message_tx, message_rx) = mpsc::channel::<Event>();
 
         // vvv moved into thread
+        let enveloppe = Enveloppe::new(1500, 3000);
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
-        let mut state = AudioThreadState::new(
-            frequency_bits.clone(),
-            playing.clone(),
-            wavetable_bank.get(WavetableKind::TriangleSaw),
-        );
-        let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
-            let frequency: f32 = f32::from_bits(state.frequency_bits.load(Ordering::Relaxed));
-            let volume: f32 = match state.playing.load(Ordering::Relaxed) {
-                true => 1.0,
-                false => 0.0,
-            };
+        let mut state = AudioThreadState {
+            voice_state: VoiceState::Idle,
+            wavetable: wavetable_bank.get(WavetableKind::Triangle),
+            message_rx,
+            volume: 0.0,
+            phase: 0.0,
+            update_period: 5,
+            update_timer: 0,
+        };
+
+        let callback = move |data: &mut [f32], _info: &cpal::OutputCallbackInfo| {
+            'message_loop: loop {
+                let event = state.message_rx.try_recv();
+                if event.is_err() {
+                    break 'message_loop;
+                }
+
+                let event = event.unwrap();
+                if let Event::NoteOn(incoming_note) = event {
+                    state.voice_state = VoiceState::Attacking(incoming_note);
+                } else if let Event::NoteOff(incoming_note) = event {
+                    let current_note = state.voice_state.get_note();
+                    if current_note.is_some() && current_note.unwrap() != incoming_note {
+                        continue 'message_loop;
+                    }
+                    state.voice_state = VoiceState::Releasing(incoming_note);
+                }
+            }
+            if state.voice_state == VoiceState::Idle {
+                for sample in data {
+                    *sample = cpal::Sample::EQUILIBRIUM;
+                }
+                state.volume = 0.0;
+                return;
+            }
+            let frequency: f32 = state.voice_state.get_note().unwrap().frequency();
             for sample in data {
-                *sample = volume * state.wavetable.at(state.phase);
-                state.phase += 2.0 * PI * frequency / sample_rate as f32;
+                let new_sample = state.volume * state.wavetable.at(state.phase);
+                *sample = new_sample;
+                state.phase += 2.0 * PI * frequency / sample_rate;
                 state.phase = state.phase.rem_euclid(2.0 * PI);
+
+                if state.update_timer == state.update_period - 1 {
+                    if let VoiceState::Attacking(note) = state.voice_state {
+                        if state.volume >= 1.0 {
+                            state.volume = 1.0;
+                            state.voice_state = VoiceState::Sustaining(note);
+                        } else {
+                            state.volume += state.update_period as f32
+                                * enveloppe.attack_increment(sample_rate);
+                            state.volume = f32::min(state.volume, 1.0);
+                        }
+                    } else if let VoiceState::Releasing(_) = state.voice_state {
+                        if state.volume <= 0.0 {
+                            state.volume = 0.0;
+                            state.voice_state = VoiceState::Idle;
+                        } else {
+                            state.volume -= state.update_period as f32
+                                * enveloppe.release_decrement(sample_rate);
+                            state.volume = f32::max(state.volume, 0.0);
+                        }
+                    }
+                    state.update_timer = 0;
+                } else {
+                    state.update_timer += 1;
+                }
             }
         };
+
         let err_fn = |err| eprintln!("an error occurred on the output audio stream: {}", err);
         let stream = device
             .build_output_stream(&stream_config.config(), callback, err_fn, None)
             .expect("failed to open output stream");
         let _ = stream.play();
 
-        Self {
-            frequency_bits,
-            playing,
-            current_note: None,
-            stream,
-        }
+        Self { message_tx, stream }
     }
 
-    pub fn set_frequency(&mut self, f: f32) {
-        dbg!(f);
-        self.frequency_bits
-            .store(Into::<f32>::into(f).to_bits(), Ordering::Relaxed);
-    }
-
-    pub fn send_midi_event(&mut self, event: MidiEvent) {
-        match event.kind {
-            MidiEventKind::NoteOn => self.process_note_on(event.note),
-            MidiEventKind::NoteOff => self.process_note_off(event.note),
-        }
-    }
-
-    fn process_note_on(&mut self, note: MidiNote) {
-        self.playing.store(true, Ordering::Relaxed);
-        self.current_note = Some(note);
-        self.set_frequency(note.frequency());
-        println!("Playing {}", note.note);
-    }
-
-    fn process_note_off(&mut self, note: MidiNote) {
-        if self.current_note.is_none() {
-            return;
-        }
-
-        let current_note = self.current_note.unwrap();
-        if current_note != note {
-            return;
-        }
-
-        self.playing.store(false, Ordering::Relaxed);
-        self.current_note = None;
-        println!("Killing {}", note.note);
+    pub fn send_midi_event(&mut self, event: Event) {
+        let _ = self.message_tx.send(event);
     }
 }
