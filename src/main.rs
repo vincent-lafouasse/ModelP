@@ -27,6 +27,7 @@ const FRAME_LEN: Duration = Duration::from_nanos((1_000_000_000f32 / TARGET_REFR
 pub fn main() -> Result<(), String> {
     let mut synth = Synth::new();
     let mut pressed_keys: HashSet<Keycode> = HashSet::new();
+    let mut root_note = MidiNote::c(2);
 
     let rendering_ctx = RenderingContext::new();
     let mut canvas = rendering_ctx.make_canvas();
@@ -42,6 +43,14 @@ pub fn main() -> Result<(), String> {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
+                SdlEvent::KeyDown {
+                    keycode: Some(Keycode::Z),
+                    ..
+                } => root_note = root_note.octave_down(1),
+                SdlEvent::KeyDown {
+                    keycode: Some(Keycode::X),
+                    ..
+                } => root_note = root_note.octave_up(1),
                 SdlEvent::KeyUp {
                     keycode: Some(keycode),
                     ..
@@ -51,7 +60,7 @@ pub fn main() -> Result<(), String> {
                     ..
                 } => match event {
                     SdlEvent::KeyDown { .. } => {
-                        if let Some(note) = keymap(keycode) {
+                        if let Some(note) = keymap(keycode, root_note) {
                             if !pressed_keys.contains(&keycode) {
                                 synth.send_midi_event(Event::NoteOn(note));
                                 pressed_keys.insert(keycode);
@@ -59,7 +68,7 @@ pub fn main() -> Result<(), String> {
                         }
                     }
                     SdlEvent::KeyUp { .. } => {
-                        if let Some(note) = keymap(keycode) {
+                        if let Some(note) = keymap(keycode, root_note) {
                             if pressed_keys.contains(&keycode) {
                                 synth.send_midi_event(Event::NoteOff(note));
                                 pressed_keys.remove(&keycode);
@@ -81,8 +90,7 @@ pub fn main() -> Result<(), String> {
     Ok(())
 }
 
-fn keymap(keycode: Keycode) -> Option<MidiNote> {
-    let root = MidiNote::c0().octave_up(3);
+fn keymap(keycode: Keycode, root: MidiNote) -> Option<MidiNote> {
     match keycode {
         // second row is white keys
         Keycode::A => Some(root),
