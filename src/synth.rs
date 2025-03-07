@@ -81,19 +81,22 @@ impl Synth {
 
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
             'message_loop: loop {
-                match state.message_rx.try_recv() {
-                    Err(_) => {
-                        break 'message_loop;
+                let event = state.message_rx.try_recv();
+                if event.is_err() {
+                    break 'message_loop;
+                }
+
+                let event = event.unwrap();
+                if event.kind == EventKind::NoteOn {
+                    state.voice_state = VoiceState::Attacking(event.note);
+                }
+                if event.kind == EventKind::NoteOff {
+                    let current_note = state.voice_state.get_note();
+                    if current_note.is_some() && current_note.unwrap() != event.note {
+                        continue 'message_loop;
                     }
-                    Ok(event) => match event.kind {
-                        EventKind::NoteOn => {
-                            state.voice_state = VoiceState::Attacking(event.note);
-                        }
-                        EventKind::NoteOff => {
-                            state.voice_state = VoiceState::Idle;
-                            state.phase = 0.0;
-                        }
-                    },
+                    state.voice_state = VoiceState::Idle;
+                    state.phase = 0.0;
                 }
             }
             if state.voice_state == VoiceState::Idle {
