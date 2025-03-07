@@ -80,9 +80,7 @@ impl Synth {
             AudioThreadState::new(wavetable_bank.get(WavetableKind::TriangleSaw), message_rx);
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
             'message_loop: loop {
-                let maybe_event = state.message_rx.try_recv();
-
-                match maybe_event {
+                match state.message_rx.try_recv() {
                     Err(_) => {
                         break 'message_loop;
                     }
