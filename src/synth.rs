@@ -115,7 +115,6 @@ impl Synth {
                         continue 'message_loop;
                     }
                     state.voice_state = VoiceState::Releasing(incoming_note);
-                    state.phase = 0.0;
                 }
             }
             if state.voice_state == VoiceState::Idle {
