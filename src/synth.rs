@@ -8,11 +8,11 @@ use crate::event::Event;
 use crate::midi::MidiNote;
 use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
-struct Envelope {
-    attack_ms: u16,
-    decay_ms: u16,
-    sustain: f32,
-    release_ms: u16,
+pub struct Envelope {
+    pub attack_ms: u16,
+    pub decay_ms: u16,
+    pub sustain: f32,
+    pub release_ms: u16,
 }
 
 impl Envelope {
@@ -97,7 +97,7 @@ impl Synth {
         let (message_tx, message_rx) = mpsc::channel::<Event>();
 
         // vvv moved into thread
-        let mut envelope = Envelope::new(300, 200);
+        let mut envelope = Envelope::default();
         let mut tuner = crate::tuner::Tuner::default();
         let mut state = AudioThreadState {
             voice_state: VoiceState::Idle,
