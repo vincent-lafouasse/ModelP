@@ -109,8 +109,7 @@ impl Synth {
                 let event = event.unwrap();
                 if let Event::NoteOn(incoming_note) = event {
                     state.voice_state = VoiceState::Attacking(incoming_note);
-                }
-                else if let Event::NoteOff(incoming_note) = event {
+                } else if let Event::NoteOff(incoming_note) = event {
                     let current_note = state.voice_state.get_note();
                     if current_note.is_some() && current_note.unwrap() != incoming_note {
                         continue 'message_loop;
@@ -133,7 +132,7 @@ impl Synth {
                 state.phase += 2.0 * PI * frequency / sample_rate as f32;
                 state.phase = state.phase.rem_euclid(2.0 * PI);
 
-                if state.frame_counter == state.frame_len {
+                if state.frame_counter == state.frame_len - 1 {
                     if let VoiceState::Attacking(note) = state.voice_state {
                         if state.volume >= 1.0 {
                             state.volume = 1.0;
