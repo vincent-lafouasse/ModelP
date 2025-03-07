@@ -113,13 +113,9 @@ impl Synth {
                     }
                     state.voice_state = VoiceState::Releasing(incoming_note);
                 } else if let Event::OctaveUp = event {
-                    dbg!(&tuner);
                     tuner.octave_up();
-                    dbg!(&tuner);
                 } else if let Event::OctaveDown = event {
-                    dbg!(&tuner);
                     tuner.octave_down();
-                    dbg!(&tuner);
                 }
             }
             if state.voice_state == VoiceState::Idle {
@@ -173,7 +169,6 @@ impl Synth {
     }
 
     pub fn send_midi_event(&mut self, event: Event) {
-        dbg!(&event);
         let _ = self.message_tx.send(event);
     }
 }
