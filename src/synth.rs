@@ -110,7 +110,7 @@ impl Synth {
                 if let Event::NoteOn(incoming_note) = event {
                     state.voice_state = VoiceState::Attacking(incoming_note);
                 }
-                if let Event::NoteOff(incoming_note) = event {
+                else if let Event::NoteOff(incoming_note) = event {
                     let current_note = state.voice_state.get_note();
                     if current_note.is_some() && current_note.unwrap() != incoming_note {
                         continue 'message_loop;
