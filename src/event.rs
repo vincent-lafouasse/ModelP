@@ -1,4 +1,5 @@
 use crate::midi::MidiNote;
+use crate::wavetable::WavetableKind;
 
 #[derive(PartialEq, Debug)]
 pub enum Event {
@@ -6,6 +7,7 @@ pub enum Event {
     NoteOff(MidiNote),
     OctaveUp,
     OctaveDown,
+    ChangeOscillator(WavetableKind),
 }
 
 impl Event {}

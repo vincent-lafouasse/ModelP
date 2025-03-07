@@ -16,11 +16,13 @@ mod wavetable;
 use crate::event::Event;
 use crate::midi::MidiNote;
 use crate::synth::Synth;
+use crate::wavetable::WavetableKind;
 
 struct App {
     synth: Synth,
     pressed_keys: HashSet<egui::Key>,
     root_note: MidiNote,
+    current_wavetable: WavetableKind,
 }
 
 impl Default for App {
@@ -28,11 +30,13 @@ impl Default for App {
         let synth = Synth::new();
         let pressed_keys: HashSet<egui::Key> = HashSet::new();
         let root_note = MidiNote::c(2);
+        let current_wavetable = WavetableKind::Triangle;
 
         Self {
             synth,
             pressed_keys,
             root_note,
+            current_wavetable,
         }
     }
 }
@@ -53,6 +57,25 @@ impl eframe::App for App {
             if ctx.input(|i| i.viewport().close_requested()) {
                 ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
             }
+
+            ui.heading("Oscillator");
+            ui.vertical(|ui| {
+                let kind = WavetableKind::Triangle;
+                if ui
+                    .radio_value(&mut self.current_wavetable, kind, format!("{kind}"))
+                    .clicked()
+                {
+                    self.synth.send_midi_event(Event::ChangeOscillator(kind));
+                }
+                let kind = WavetableKind::Square;
+                if ui
+                    .radio_value(&mut self.current_wavetable, kind, format!("{kind}"))
+                    .clicked()
+                {
+                    self.synth.send_midi_event(Event::ChangeOscillator(kind));
+                }
+            });
+            ui.end_row();
 
             let events = ui.ctx().input(|i| i.events.clone());
             'event_loop: for event in &events {

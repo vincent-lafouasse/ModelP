@@ -117,6 +117,7 @@ impl Synth {
                     }
                     Event::OctaveUp => tuner.octave_up(),
                     Event::OctaveDown => tuner.octave_down(),
+                    Event::ChangeOscillator(osc) => state.wavetable_kind = osc,
                 }
             }
             if state.voice_state == VoiceState::Idle {
