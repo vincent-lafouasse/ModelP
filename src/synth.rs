@@ -85,7 +85,7 @@ impl Synth {
         let (message_tx, message_rx) = mpsc::channel::<Event>();
 
         // vvv moved into thread
-        let mut envelope = Envelope::new(1500, 3000);
+        let mut envelope = Envelope::new(300, 200);
         let mut tuner = crate::tuner::Tuner::default();
         let mut state = AudioThreadState {
             voice_state: VoiceState::Idle,
