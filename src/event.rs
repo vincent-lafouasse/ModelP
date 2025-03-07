@@ -10,6 +10,8 @@ pub enum Event {
     ChangeOscillator(WavetableKind),
     SetMaster(f32),
     SetAttackMs(u16),
+    SetDecayMs(u16),
+    SetSustain(f32),
     SetReleaseMs(u16),
 }
 
