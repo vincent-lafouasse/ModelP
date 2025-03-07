@@ -40,12 +40,7 @@ struct AudioThreadState {
 }
 
 impl AudioThreadState {
-    fn new(
-        frequency_bits: Arc<AtomicU32>,
-        playing: Arc<AtomicBool>,
-        wavetable: Arc<Wavetable>,
-        message_rx: mpsc::Receiver<MidiEvent>,
-    ) -> Self {
+    fn new(wavetable: Arc<Wavetable>, message_rx: mpsc::Receiver<MidiEvent>) -> Self {
         Self {
             voice_state: VoiceState::Idle,
             wavetable,
@@ -57,9 +52,6 @@ impl AudioThreadState {
 }
 
 pub struct Synth {
-    frequency_bits: Arc<AtomicU32>,
-    playing: Arc<AtomicBool>,
-    current_note: Option<MidiNote>,
     message_tx: mpsc::Sender<MidiEvent>,
     stream: Stream,
 }
@@ -80,19 +72,12 @@ impl Synth {
             .with_max_sample_rate();
         let sample_rate = stream_config.sample_rate().0;
 
-        let frequency_bits: Arc<AtomicU32> = Arc::new(AtomicU32::new(0));
-        frequency_bits.store(Into::<f32>::into(256.0f32).to_bits(), Ordering::Relaxed);
-        let playing: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
         let (message_tx, message_rx) = mpsc::channel::<MidiEvent>();
 
         // vvv moved into thread
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
-        let mut state = AudioThreadState::new(
-            frequency_bits.clone(),
-            playing.clone(),
-            wavetable_bank.get(WavetableKind::TriangleSaw),
-            message_rx,
-        );
+        let mut state =
+            AudioThreadState::new(wavetable_bank.get(WavetableKind::TriangleSaw), message_rx);
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
             'message_loop: loop {
                 let maybe_event = state.message_rx.try_recv();
@@ -137,19 +122,7 @@ impl Synth {
             .expect("failed to open output stream");
         let _ = stream.play();
 
-        Self {
-            frequency_bits,
-            playing,
-            current_note: None,
-            message_tx,
-            stream,
-        }
-    }
-
-    pub fn set_frequency(&mut self, f: f32) {
-        dbg!(f);
-        self.frequency_bits
-            .store(Into::<f32>::into(f).to_bits(), Ordering::Relaxed);
+        Self { message_tx, stream }
     }
 
     pub fn send_midi_event(&mut self, event: MidiEvent) {
