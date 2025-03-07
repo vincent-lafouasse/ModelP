@@ -1,5 +1,6 @@
 use crate::midi::MidiNote;
 
+#[derive(PartialEq)]
 pub enum EventKind {
     NoteOn,
     NoteOff,
