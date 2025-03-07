@@ -12,6 +12,7 @@ use crate::envelope::StreamEvent;
 use crate::midi::{MidiEvent, MidiEventKind, MidiNote};
 use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
+#[derive(PartialEq)]
 enum VoiceState {
     Idle,
     Attacking(MidiNote),
@@ -19,9 +20,19 @@ enum VoiceState {
     Releasing(MidiNote),
 }
 
+impl VoiceState {
+    fn get_note(&self) -> Option<MidiNote> {
+        match self {
+            VoiceState::Idle => None,
+            VoiceState::Attacking(note) => Some(*note),
+            VoiceState::Sustaining(note) => Some(*note),
+            VoiceState::Releasing(note) => Some(*note),
+        }
+    }
+}
+
 struct AudioThreadState {
-    frequency_bits: Arc<AtomicU32>,
-    playing: Arc<AtomicBool>,
+    voice_state: VoiceState,
     wavetable: Arc<Wavetable>,
     message_rx: mpsc::Receiver<MidiEvent>,
     volume: f32,
@@ -36,8 +47,7 @@ impl AudioThreadState {
         message_rx: mpsc::Receiver<MidiEvent>,
     ) -> Self {
         Self {
-            frequency_bits,
-            playing,
+            voice_state: VoiceState::Idle,
             wavetable,
             message_rx,
             volume: 0.0,
@@ -84,15 +94,41 @@ impl Synth {
             message_rx,
         );
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
-            let frequency: f32 = f32::from_bits(state.frequency_bits.load(Ordering::Relaxed));
-            let volume: f32 = match state.playing.load(Ordering::Relaxed) {
-                true => 1.0,
-                false => 0.0,
-            };
-            for sample in data {
-                *sample = volume * state.wavetable.at(state.phase);
-                state.phase += 2.0 * PI * frequency / sample_rate as f32;
-                state.phase = state.phase.rem_euclid(2.0 * PI);
+            'message_loop: loop {
+                let maybe_event = state.message_rx.try_recv();
+
+                match maybe_event {
+                    Err(_) => {
+                        break 'message_loop;
+                    }
+                    Ok(event) => match event.kind {
+                        MidiEventKind::NoteOn => {
+                            state.voice_state = VoiceState::Sustaining(event.note);
+                        }
+                        MidiEventKind::NoteOff => {
+                            state.voice_state = VoiceState::Idle;
+                            state.phase = 0.0;
+                        }
+                    },
+                }
+            }
+            if state.voice_state == VoiceState::Idle {
+                for sample in data {
+                    *sample = cpal::Sample::EQUILIBRIUM;
+                }
+            } else {
+                let frequency: f32 = state.voice_state.get_note().unwrap().frequency();
+                let volume: f32 = match state.voice_state {
+                    VoiceState::Attacking(..)
+                    | VoiceState::Sustaining(..)
+                    | VoiceState::Releasing(..) => 1.0,
+                    VoiceState::Idle => unreachable!(),
+                };
+                for sample in data {
+                    *sample = volume * state.wavetable.at(state.phase);
+                    state.phase += 2.0 * PI * frequency / sample_rate as f32;
+                    state.phase = state.phase.rem_euclid(2.0 * PI);
+                }
             }
         };
         let err_fn = |err| eprintln!("an error occurred on the output audio stream: {}", err);
@@ -117,31 +153,6 @@ impl Synth {
     }
 
     pub fn send_midi_event(&mut self, event: MidiEvent) {
-        match event.kind {
-            MidiEventKind::NoteOn => self.process_note_on(event.note),
-            MidiEventKind::NoteOff => self.process_note_off(event.note),
-        }
-    }
-
-    fn process_note_on(&mut self, note: MidiNote) {
-        self.playing.store(true, Ordering::Relaxed);
-        self.current_note = Some(note);
-        self.set_frequency(note.frequency());
-        println!("Playing {}", note.note);
-    }
-
-    fn process_note_off(&mut self, note: MidiNote) {
-        if self.current_note.is_none() {
-            return;
-        }
-
-        let current_note = self.current_note.unwrap();
-        if current_note != note {
-            return;
-        }
-
-        self.playing.store(false, Ordering::Relaxed);
-        self.current_note = None;
-        println!("Killing {}", note.note);
+        let _ = self.message_tx.send(event);
     }
 }
