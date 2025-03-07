@@ -10,13 +10,17 @@ use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
 struct Envelope {
     attack_ms: u16,
+    decay_ms: u16,
+    sustain: f32,
     release_ms: u16,
 }
 
 impl Envelope {
-    fn new(attack_ms: u16, release_ms: u16) -> Self {
+    fn new(attack_ms: u16, decay_ms: u16, sustain: f32, release_ms: u16) -> Self {
         Self {
             attack_ms,
+            decay_ms,
+            sustain,
             release_ms,
         }
     }
@@ -25,8 +29,12 @@ impl Envelope {
         1000.0 / (sample_rate * self.attack_ms as f32)
     }
 
+    fn decay_increment(&self, sample_rate: f32) -> f32 {
+        1000.0 * (1.0 - self.sustain) / (sample_rate * self.attack_ms as f32)
+    }
+
     fn release_decrement(&self, sample_rate: f32) -> f32 {
-        1000.0 / (sample_rate * self.release_ms as f32)
+        1000.0 * self.sustain / (sample_rate * self.release_ms as f32)
     }
 }
 
