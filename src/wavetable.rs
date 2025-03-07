@@ -111,6 +111,7 @@ impl Wavetable {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum WavetableKind {
     Triangle,
     TriangleSaw,

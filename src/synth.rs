@@ -51,7 +51,8 @@ impl VoiceState {
 
 struct AudioThreadState {
     voice_state: VoiceState,
-    wavetable: Arc<Wavetable>,
+    wavetable_bank: Arc<WavetableBank>,
+    wavetable_kind: WavetableKind,
     message_rx: mpsc::Receiver<Event>,
     volume: f32,
     phase: f32,
@@ -84,11 +85,11 @@ impl Synth {
 
         // vvv moved into thread
         let envelope = Envelope::new(1500, 3000);
-        let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
         let mut tuner = crate::tuner::Tuner::default();
         let mut state = AudioThreadState {
             voice_state: VoiceState::Idle,
-            wavetable: wavetable_bank.get(WavetableKind::Triangle),
+            wavetable_bank: Arc::new(WavetableBank::new()),
+            wavetable_kind: WavetableKind::Triangle,
             message_rx,
             volume: 0.0,
             phase: 0.0,
@@ -127,7 +128,11 @@ impl Synth {
             }
             let frequency: f32 = tuner.get(state.voice_state.get_note().unwrap());
             for sample in data {
-                let new_sample = state.volume * state.wavetable.at(state.phase);
+                let new_sample = state.volume
+                    * state
+                        .wavetable_bank
+                        .get(state.wavetable_kind)
+                        .at(state.phase);
                 *sample = new_sample;
                 state.phase += 2.0 * PI * frequency / sample_rate;
                 state.phase = state.phase.rem_euclid(2.0 * PI);
