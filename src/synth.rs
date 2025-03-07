@@ -13,19 +13,20 @@ use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 struct Enveloppe {
     attack: Duration,
     release: Duration,
+    attack_increment: f32,
+    release_decrement: f32,
 }
 
 impl Enveloppe {
-    fn new(attack: Duration, release: Duration) -> Self {
-        Self { attack, release }
-    }
-
-    fn attack_increment(&self, sample_rate: f32) -> f32 {
-        1000.0 / (sample_rate * self.attack.as_millis() as f32)
-    }
-
-    fn release_decrement(&self, sample_rate: f32) -> f32 {
-        1000.0 / (sample_rate * self.release.as_millis() as f32)
+    fn new(attack: Duration, release: Duration, sample_rate: f32) -> Self {
+        let attack_increment: f32 = 1000.0 / (sample_rate * attack.as_millis() as f32);
+        let release_decrement: f32 = 1000.0 / (sample_rate * release.as_millis() as f32);
+        Self {
+            attack,
+            release,
+            attack_increment,
+            release_decrement,
+        }
     }
 }
 
@@ -80,7 +81,11 @@ impl Synth {
         let (message_tx, message_rx) = mpsc::channel::<Event>();
 
         // vvv moved into thread
-        let enveloppe = Enveloppe::new(Duration::from_millis(300), Duration::from_millis(500));
+        let enveloppe = Enveloppe::new(
+            Duration::from_millis(300),
+            Duration::from_millis(500),
+            sample_rate as f32,
+        );
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
         let mut state = AudioThreadState {
             voice_state: VoiceState::Idle,
@@ -129,7 +134,7 @@ impl Synth {
                         state.volume = 1.0;
                         state.voice_state = VoiceState::Sustaining(note);
                     } else {
-                        state.volume += enveloppe.attack_increment(sample_rate as f32);
+                        state.volume += enveloppe.attack_increment;
                         state.volume = f32::min(state.volume, 1.0);
                     }
                 }
@@ -138,7 +143,7 @@ impl Synth {
                         state.volume = 0.0;
                         state.voice_state = VoiceState::Idle;
                     } else {
-                        state.volume -= enveloppe.release_decrement(sample_rate as f32);
+                        state.volume -= enveloppe.release_decrement;
                         state.volume = f32::max(state.volume, 0.0);
                     }
                 }
