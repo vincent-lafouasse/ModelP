@@ -1,6 +1,7 @@
 use std::f32::consts::PI;
 use std::f32::consts::TAU;
 use std::sync::{mpsc, Arc};
+use std::time::Duration;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::Stream;
@@ -8,6 +9,25 @@ use cpal::Stream;
 use crate::event::Event;
 use crate::midi::MidiNote;
 use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
+
+struct Enveloppe {
+    attack: Duration,
+    release: Duration,
+}
+
+impl Enveloppe {
+    fn new(attack: Duration, release: Duration) -> Self {
+        Self { attack, release }
+    }
+
+    fn attack_increment(&self, sample_rate: f32) -> f32 {
+        1000.0 / (sample_rate * self.attack.as_millis() as f32)
+    }
+
+    fn release_decrement(&self, sample_rate: f32) -> f32 {
+        1000.0 / (sample_rate * self.release.as_millis() as f32)
+    }
+}
 
 #[derive(PartialEq)]
 enum VoiceState {
@@ -36,18 +56,6 @@ struct AudioThreadState {
     phase: f32,
 }
 
-impl AudioThreadState {
-    fn new(wavetable: Arc<Wavetable>, message_rx: mpsc::Receiver<Event>) -> Self {
-        Self {
-            voice_state: VoiceState::Idle,
-            wavetable,
-            message_rx,
-            volume: 0.0,
-            phase: 0.0,
-        }
-    }
-}
-
 pub struct Synth {
     message_tx: mpsc::Sender<Event>,
     stream: Stream,
@@ -72,9 +80,15 @@ impl Synth {
         let (message_tx, message_rx) = mpsc::channel::<Event>();
 
         // vvv moved into thread
+        let enveloppe = Enveloppe::new(Duration::from_millis(300), Duration::from_millis(500));
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
-        let mut state =
-            AudioThreadState::new(wavetable_bank.get(WavetableKind::TriangleSaw), message_rx);
+        let mut state = AudioThreadState {
+            voice_state: VoiceState::Idle,
+            wavetable: wavetable_bank.get(WavetableKind::Triangle),
+            message_rx,
+            volume: 0.0,
+            phase: 0.0,
+        };
 
         let callback = move |data: &mut [f32], info: &cpal::OutputCallbackInfo| {
             'message_loop: loop {
@@ -100,19 +114,34 @@ impl Synth {
                 for sample in data {
                     *sample = cpal::Sample::EQUILIBRIUM;
                 }
+                state.volume = 0.0;
                 return;
             }
             let frequency: f32 = state.voice_state.get_note().unwrap().frequency();
-            let volume: f32 = match state.voice_state {
-                VoiceState::Attacking(..)
-                | VoiceState::Sustaining(..)
-                | VoiceState::Releasing(..) => 1.0,
-                VoiceState::Idle => unreachable!(),
-            };
             for sample in data {
-                *sample = volume * state.wavetable.at(state.phase);
+                let new_sample = state.volume * state.wavetable.at(state.phase);
+                dbg!(new_sample);
+                *sample = new_sample;
                 state.phase += 2.0 * PI * frequency / sample_rate as f32;
                 state.phase = state.phase.rem_euclid(2.0 * PI);
+                if let VoiceState::Attacking(note) = state.voice_state {
+                    if state.volume >= 1.0 {
+                        state.volume = 1.0;
+                        state.voice_state = VoiceState::Sustaining(note);
+                    } else {
+                        state.volume += enveloppe.attack_increment(sample_rate as f32);
+                        state.volume = f32::min(state.volume, 1.0);
+                    }
+                }
+                if let VoiceState::Releasing(note) = state.voice_state {
+                    if state.volume <= 0.0 {
+                        state.volume = 0.0;
+                        state.voice_state = VoiceState::Idle;
+                    } else {
+                        state.volume -= enveloppe.release_decrement(sample_rate as f32);
+                        state.volume = f32::max(state.volume, 0.0);
+                    }
+                }
             }
         };
 
