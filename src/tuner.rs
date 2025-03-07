@@ -6,7 +6,7 @@ pub struct Tuner {
 
 impl Default for Tuner {
     fn default() -> Self {
-        Self {a4: 440.0}
+        Self { a4: 440.0 }
     }
 }
 

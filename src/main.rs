@@ -10,8 +10,8 @@ mod event;
 mod math;
 mod midi;
 mod synth;
-mod wavetable;
 mod tuner;
+mod wavetable;
 
 use crate::event::Event;
 use crate::midi::MidiNote;
