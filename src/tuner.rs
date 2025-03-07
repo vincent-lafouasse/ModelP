@@ -11,7 +11,7 @@ impl Default for Tuner {
 }
 
 impl Tuner {
-    fn get(&self, note: MidiNote) -> f32 {
+    pub fn get(&self, note: MidiNote) -> f32 {
         let offset_from_a4: i16 = note.note as i16 - 69;
 
         440.0 * 2.0_f32.powf(offset_from_a4 as f32 / 12.0)

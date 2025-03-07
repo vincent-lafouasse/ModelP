@@ -85,6 +85,7 @@ impl Synth {
         // vvv moved into thread
         let enveloppe = Enveloppe::new(1500, 3000);
         let wavetable_bank: Arc<WavetableBank> = Arc::new(WavetableBank::new());
+        let tuner = crate::tuner::Tuner::default();
         let mut state = AudioThreadState {
             voice_state: VoiceState::Idle,
             wavetable: wavetable_bank.get(WavetableKind::Triangle),
@@ -120,7 +121,7 @@ impl Synth {
                 state.volume = 0.0;
                 return;
             }
-            let frequency: f32 = state.voice_state.get_note().unwrap().frequency();
+            let frequency: f32 = tuner.get(state.voice_state.get_note().unwrap());
             for sample in data {
                 let new_sample = state.volume * state.wavetable.at(state.phase);
                 *sample = new_sample;
