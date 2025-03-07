@@ -63,7 +63,7 @@ struct AudioThreadState {
 
 pub struct Synth {
     message_tx: mpsc::Sender<Event>,
-    stream: Stream,
+    _stream: Stream,
 }
 
 impl Synth {
@@ -172,12 +172,15 @@ impl Synth {
         };
 
         let err_fn = |err| eprintln!("an error occurred on the output audio stream: {}", err);
-        let stream = device
+        let _stream = device
             .build_output_stream(&stream_config.config(), callback, err_fn, None)
             .expect("failed to open output stream");
-        let _ = stream.play();
+        let _ = _stream.play();
 
-        Self { message_tx, stream }
+        Self {
+            message_tx,
+            _stream,
+        }
     }
 
     pub fn send_event(&mut self, event: Event) {

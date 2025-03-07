@@ -4,10 +4,6 @@ pub struct MidiNote {
 }
 
 impl MidiNote {
-    pub fn new(note: u8) -> Self {
-        Self { note }
-    }
-
     #[allow(dead_code)]
     pub fn offset_up(&self, n: u8) -> Self {
         let note: u8 = self.note.saturating_add(n);
