@@ -8,6 +8,7 @@ use crate::event::Event;
 use crate::midi::MidiNote;
 use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
+#[derive(Copy, Clone, Debug)]
 pub struct Envelope {
     pub attack_ms: u16,
     pub decay_ms: u16,
@@ -112,6 +113,7 @@ impl Synth {
             update_period: 5,
             update_timer: 0,
         };
+        dbg!(&envelope);
 
         let callback = move |data: &mut [f32], _info: &cpal::OutputCallbackInfo| {
             'message_loop: loop {
