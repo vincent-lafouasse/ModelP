@@ -121,6 +121,7 @@ impl Synth {
                 if event.is_err() {
                     break 'message_loop;
                 }
+                dbg!(&event.unwrap());
 
                 match event.unwrap() {
                     Event::NoteOn(incoming_note) => {
