@@ -135,17 +135,17 @@ impl eframe::App for App {
                 match event {
                     egui::Event::Key {
                         key: Key::Escape,
-                        pressed: false,
+                        pressed: false, // KeyUp
                         ..
                     } => ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close),
                     egui::Event::Key {
                         key: Key::Z,
-                        pressed: false,
+                        pressed: false, // KeyUp
                         ..
                     } => self.synth.send_event(Event::OctaveDown),
                     egui::Event::Key {
                         key: Key::X,
-                        pressed: false,
+                        pressed: false, // KeyUp
                         ..
                     } => self.synth.send_event(Event::OctaveUp),
                     egui::Event::Key { key, pressed, .. } => {
@@ -155,14 +155,14 @@ impl eframe::App for App {
                         }
                         let note = note.unwrap();
                         match pressed {
-                            // NoteOn
+                            // KeyDown
                             true => {
                                 if !self.pressed_keys.contains(key) {
                                     self.synth.send_event(Event::NoteOn(note));
                                     self.pressed_keys.insert(*key);
                                 }
                             }
-                            // NoteOff
+                            // KeyUp
                             false => {
                                 if self.pressed_keys.contains(key) {
                                     self.synth.send_event(Event::NoteOff(note));
