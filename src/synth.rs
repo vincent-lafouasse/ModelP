@@ -78,6 +78,7 @@ struct AudioThreadState {
 
 impl AudioThreadState {
     fn set_state(&mut self, voice_state: VoiceState) {
+        dbg!(&voice_state);
         self.voice_state = voice_state;
     }
 }
@@ -169,7 +170,7 @@ impl Synth {
                 state.phase += 2.0 * PI * frequency / sample_rate;
                 state.phase = state.phase.rem_euclid(2.0 * PI);
 
-                if state.update_timer == state.update_period - 1 {
+                if state.update_timer % state.update_period == 0 {
                     if let VoiceState::Attacking(note) = state.voice_state {
                         if state.volume >= 1.0 {
                             state.volume = 1.0;
@@ -198,7 +199,12 @@ impl Synth {
                             state.volume = f32::max(state.volume, 0.0);
                         }
                     }
-                    state.update_timer = 0;
+                    if state.update_timer == 20 * state.update_period {
+                        state.update_timer = 0;
+                        //dbg!(state.volume);
+                    } else {
+                        state.update_timer += 1;
+                    }
                 } else {
                     state.update_timer += 1;
                 }
