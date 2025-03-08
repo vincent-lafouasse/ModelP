@@ -89,7 +89,6 @@ impl eframe::App for App {
             }
         });
 
-        egui::TopBottomPanel::top("Filter").show(ctx, |ui| {});
         egui::CentralPanel::default().show(ctx, |ui| {});
 
         egui::TopBottomPanel::bottom("Amp").show(ctx, |ui| {
