@@ -43,7 +43,7 @@ impl Envelope {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 enum VoiceState {
     Idle,
     Attacking(MidiNote),
@@ -74,6 +74,12 @@ struct AudioThreadState {
     phase: f32,
     update_period: usize,
     update_timer: usize,
+}
+
+impl AudioThreadState {
+    fn set_state(&mut self, voice_state: VoiceState) {
+        self.voice_state = voice_state;
+    }
 }
 
 pub struct Synth {
@@ -125,14 +131,14 @@ impl Synth {
 
                 match event.unwrap() {
                     Event::NoteOn(incoming_note) => {
-                        state.voice_state = VoiceState::Attacking(incoming_note);
+                        state.set_state(VoiceState::Attacking(incoming_note));
                     }
                     Event::NoteOff(incoming_note) => {
                         let current_note = state.voice_state.get_note();
                         if current_note.is_some() && current_note.unwrap() != incoming_note {
                             continue 'message_loop;
                         }
-                        state.voice_state = VoiceState::Releasing(incoming_note);
+                        state.set_state(VoiceState::Releasing(incoming_note));
                     }
                     Event::OctaveUp => tuner.octave_up(),
                     Event::OctaveDown => tuner.octave_down(),
@@ -167,7 +173,7 @@ impl Synth {
                     if let VoiceState::Attacking(note) = state.voice_state {
                         if state.volume >= 1.0 {
                             state.volume = 1.0;
-                            state.voice_state = VoiceState::Decaying(note);
+                            state.set_state(VoiceState::Decaying(note));
                         } else {
                             state.volume +=
                                 state.update_period as f32 * envelope.attack_increment(sample_rate);
@@ -176,7 +182,7 @@ impl Synth {
                     } else if let VoiceState::Decaying(note) = state.voice_state {
                         if state.volume <= envelope.sustain {
                             state.volume = envelope.sustain;
-                            state.voice_state = VoiceState::Sustaining(note);
+                            state.set_state(VoiceState::Sustaining(note));
                         } else {
                             state.volume -=
                                 state.update_period as f32 * envelope.decay_increment(sample_rate);
@@ -185,7 +191,7 @@ impl Synth {
                     } else if let VoiceState::Releasing(_) = state.voice_state {
                         if state.volume <= 0.0 {
                             state.volume = 0.0;
-                            state.voice_state = VoiceState::Idle;
+                            state.set_state(VoiceState::Idle);
                         } else {
                             state.volume -= state.update_period as f32
                                 * envelope.release_decrement(sample_rate);
