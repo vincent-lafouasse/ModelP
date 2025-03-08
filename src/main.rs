@@ -24,8 +24,7 @@ struct App {
     root_note: MidiNote,
     current_wavetable: WavetableKind,
     master_volume: f32,
-    attack_ms: u16,
-    release_ms: u16,
+    envelope: crate::synth::Envelope,
 }
 
 impl Default for App {
@@ -34,6 +33,7 @@ impl Default for App {
         let pressed_keys: HashSet<egui::Key> = HashSet::new();
         let root_note = MidiNote::c(2);
         let current_wavetable = WavetableKind::Triangle;
+        let envelope = crate::synth::Envelope::default();
 
         Self {
             synth,
@@ -41,8 +41,7 @@ impl Default for App {
             root_note,
             current_wavetable,
             master_volume: 0.7,
-            attack_ms: 300,
-            release_ms: 200,
+            envelope,
         }
     }
 }
@@ -50,11 +49,7 @@ impl Default for App {
 fn main() -> Result<(), eframe::Error> {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
     let options = eframe::NativeOptions::default();
-    eframe::run_native(
-        "decapode",
-        options,
-        Box::new(|_cc| Ok(Box::<App>::default())),
-    )
+    eframe::run_native("ModelP", options, Box::new(|_cc| Ok(Box::<App>::default())))
 }
 
 impl eframe::App for App {
@@ -75,7 +70,11 @@ impl eframe::App for App {
                 }
                 let kind = WavetableKind::Square;
                 if ui
-                    .radio_value(&mut self.current_wavetable, kind, format!("{kind}"))
+                    .radio_value(
+                        &mut self.current_wavetable,
+                        kind,
+                        format!("{kind} (you should lower the master way down)"),
+                    )
                     .clicked()
                 {
                     self.synth.send_event(Event::ChangeOscillator(kind));
@@ -92,23 +91,43 @@ impl eframe::App for App {
 
             if ui
                 .add(
-                    egui::Slider::new(&mut self.attack_ms, 5..=10000)
+                    egui::Slider::new(&mut self.envelope.attack_ms, 5..=10000)
                         .logarithmic(true)
                         .text("Attack (ms)"),
                 )
                 .dragged()
             {
-                self.synth.send_event(Event::SetAttackMs(self.attack_ms));
+                self.synth
+                    .send_event(Event::SetAttackMs(self.envelope.attack_ms));
             }
             if ui
                 .add(
-                    egui::Slider::new(&mut self.release_ms, 5..=10000)
+                    egui::Slider::new(&mut self.envelope.decay_ms, 5..=10000)
+                        .logarithmic(true)
+                        .text("Decay (ms)"),
+                )
+                .dragged()
+            {
+                self.synth
+                    .send_event(Event::SetDecayMs(self.envelope.decay_ms));
+            }
+            if ui
+                .add(egui::Slider::new(&mut self.envelope.sustain, 0.0..=1.0).text("Sustain"))
+                .dragged()
+            {
+                self.synth
+                    .send_event(Event::SetSustain(self.envelope.sustain));
+            }
+            if ui
+                .add(
+                    egui::Slider::new(&mut self.envelope.release_ms, 5..=10000)
                         .logarithmic(true)
                         .text("Release (ms)"),
                 )
                 .dragged()
             {
-                self.synth.send_event(Event::SetReleaseMs(self.release_ms));
+                self.synth
+                    .send_event(Event::SetReleaseMs(self.envelope.release_ms));
             }
 
             let events = ui.ctx().input(|i| i.events.clone());
