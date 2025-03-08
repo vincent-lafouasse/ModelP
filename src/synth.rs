@@ -35,7 +35,7 @@ impl Envelope {
     }
 
     fn decay_increment(&self, sample_rate: f32) -> f32 {
-        1000.0 * (1.0 - self.sustain) / (sample_rate * self.attack_ms as f32)
+        1000.0 * (1.0 - self.sustain) / (sample_rate * self.decay_ms as f32)
     }
 
     fn release_decrement(&self, sample_rate: f32) -> f32 {
