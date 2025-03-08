@@ -54,6 +54,16 @@ fn main() -> Result<(), eframe::Error> {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::SidePanel::right("Output").show(ctx, |ui| {
+            ui.heading("Output");
+            if ui
+                .add(egui::Slider::new(&mut self.master_volume, 0.0..=1.0).text("Master"))
+                .dragged()
+            {
+                self.synth.send_event(Event::SetMaster(self.master_volume));
+            }
+        });
+
         egui::CentralPanel::default().show(ctx, |ui| {
             if ctx.input(|i| i.viewport().close_requested()) {
                 ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
@@ -81,13 +91,6 @@ impl eframe::App for App {
                 }
             });
             ui.end_row();
-
-            if ui
-                .add(egui::Slider::new(&mut self.master_volume, 0.0..=1.0).text("Master"))
-                .dragged()
-            {
-                self.synth.send_event(Event::SetMaster(self.master_volume));
-            }
 
             if ui
                 .add(
