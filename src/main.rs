@@ -70,7 +70,11 @@ impl eframe::App for App {
                 }
                 let kind = WavetableKind::Square;
                 if ui
-                    .radio_value(&mut self.current_wavetable, kind, format!("{kind}"))
+                    .radio_value(
+                        &mut self.current_wavetable,
+                        kind,
+                        format!("{kind} (you should lower the master way down)"),
+                    )
                     .clicked()
                 {
                     self.synth.send_event(Event::ChangeOscillator(kind));
