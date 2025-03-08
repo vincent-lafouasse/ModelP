@@ -89,7 +89,10 @@ impl eframe::App for App {
             }
         });
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::TopBottomPanel::top("Filter").show(ctx, |ui| {});
+        egui::CentralPanel::default().show(ctx, |ui| {});
+
+        egui::TopBottomPanel::bottom("Amp").show(ctx, |ui| {
             ui.heading("Loudness Contour");
             if ctx.input(|i| i.viewport().close_requested()) {
                 ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
