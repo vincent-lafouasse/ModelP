@@ -49,11 +49,7 @@ impl Default for App {
 fn main() -> Result<(), eframe::Error> {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
     let options = eframe::NativeOptions::default();
-    eframe::run_native(
-        "ModelP",
-        options,
-        Box::new(|_cc| Ok(Box::<App>::default())),
-    )
+    eframe::run_native("ModelP", options, Box::new(|_cc| Ok(Box::<App>::default())))
 }
 
 impl eframe::App for App {
