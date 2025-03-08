@@ -1,5 +1,5 @@
 use crate::midi::MidiNote;
-use crate::wavetable::WavetableKind;
+use crate::synth::WavetableKind;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Event {

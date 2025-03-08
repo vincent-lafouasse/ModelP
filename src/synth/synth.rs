@@ -6,7 +6,8 @@ use cpal::Stream;
 
 use crate::event::Event;
 use crate::midi::MidiNote;
-use crate::wavetable::{Wavetable, WavetableBank, WavetableKind};
+use crate::synth::tuner::Tuner;
+use crate::synth::wavetable::{Wavetable, WavetableBank, WavetableKind};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Envelope {
@@ -108,7 +109,7 @@ impl Synth {
 
         // vvv moved into thread
         let mut envelope = Envelope::default();
-        let mut tuner = crate::tuner::Tuner::default();
+        let mut tuner = Tuner::default();
         let mut state = AudioThreadState {
             voice_state: VoiceState::Idle,
             wavetable_bank: Arc::new(WavetableBank::new()),

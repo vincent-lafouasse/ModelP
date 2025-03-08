@@ -10,13 +10,11 @@ mod event;
 mod math;
 mod midi;
 mod synth;
-mod tuner;
-mod wavetable;
 
 use crate::event::Event;
 use crate::midi::MidiNote;
 use crate::synth::Synth;
-use crate::wavetable::WavetableKind;
+use crate::synth::WavetableKind;
 
 struct App {
     synth: Synth,
