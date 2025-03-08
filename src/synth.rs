@@ -39,7 +39,7 @@ impl Envelope {
     }
 
     fn release_decrement(&self, sample_rate: f32) -> f32 {
-        1000.0 * self.sustain / (sample_rate * self.release_ms as f32)
+        1000.0 / (sample_rate * self.release_ms as f32)
     }
 }
 
